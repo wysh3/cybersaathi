@@ -1,0 +1,464 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "leaflet/dist/leaflet.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@custom-variant data-horizontal (&[data-orientation="horizontal"]);
+@custom-variant data-vertical (&[data-orientation="vertical"]);
+@custom-variant data-active (&[data-state="active"]);
+@custom-variant data-open (&[data-state="open"]);
+@custom-variant data-checked (&[data-state="checked"]);
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-sidebar: hsl(var(--sidebar));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  --color-saffron: hsl(var(--app-saffron));
+  --color-saffron-soft: hsl(var(--app-saffron-soft));
+  --color-emergency: hsl(var(--app-emergency));
+  --color-emergency-soft: hsl(var(--app-emergency-soft));
+  --color-success: hsl(var(--app-success));
+  --color-success-soft: hsl(var(--app-success-soft));
+  --color-navy: hsl(var(--app-navy));
+  --color-navy-soft: hsl(var(--app-navy-soft));
+
+  --color-sky-25: var(--sky-25);
+  --color-sky-50: var(--sky-50);
+  --color-sky-100: var(--sky-100);
+  --color-sky-200: var(--sky-200);
+  --color-sky-300: var(--sky-300);
+  --color-sky-400: var(--sky-400);
+  --color-sky-500: var(--sky-500);
+  --color-sky-600: var(--sky-600);
+  --color-sky-700: var(--sky-700);
+  --color-sky-800: var(--sky-800);
+  --color-sky-900: var(--sky-900);
+
+  --color-ink-500: var(--ink-500);
+  --color-ink-600: var(--ink-600);
+  --color-ink-700: var(--ink-700);
+  --color-ink-800: var(--ink-800);
+  --color-ink-900: var(--ink-900);
+
+  --color-intensity-0: hsl(var(--intensity-0));
+  --color-intensity-1: hsl(var(--intensity-1));
+  --color-intensity-2: hsl(var(--intensity-2));
+  --color-intensity-3: hsl(var(--intensity-3));
+  --color-intensity-4: hsl(var(--intensity-4));
+  --color-intensity-5: hsl(var(--intensity-5));
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+
+  --font-sans: var(--font-plex-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-serif: var(--font-newsreader), "Georgia", "Times New Roman", serif;
+
+  --shadow-glass: 0 24px 80px rgba(20, 70, 120, 0.14);
+  --shadow-glass-soft: 0 12px 32px rgba(20, 70, 120, 0.10);
+  --shadow-glass-strong: 0 32px 96px rgba(20, 70, 120, 0.18);
+}
+
+:root {
+  /* Sky glass palette — pack §2 */
+  --sky-25: #f8fcff;
+  --sky-50: #eef8ff;
+  --sky-100: #dff1ff;
+  --sky-200: #c8e6ff;
+  --sky-300: #9ed1ff;
+  --sky-400: #65b3ff;
+  --sky-500: #1f7eea;
+  --sky-600: #075fd1;
+  --sky-700: #084ba3;
+  --sky-800: #083d7f;
+  --sky-900: #082f60;
+
+  /* Ink palette — pack §2 */
+  --ink-500: #61738c;
+  --ink-600: #405675;
+  --ink-700: #203a5c;
+  --ink-800: #102744;
+  --ink-900: #071a33;
+
+  /* Shadcn semantic tokens (HSL channel format) — CyberSaathi civic sky palette */
+  --background: 210 100% 98%;
+  --foreground: 215 67% 12%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 215 67% 12%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 215 67% 12%;
+
+  --primary: 213 91% 43%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 210 100% 96%;
+  --secondary-foreground: 215 67% 12%;
+
+  --muted: 210 60% 96%;
+  --muted-foreground: 215 18% 47%;
+
+  --accent: 210 95% 92%;
+  --accent-foreground: 213 91% 25%;
+
+  --destructive: 4 70% 48%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 210 50% 88%;
+  --input: 210 50% 84%;
+  --ring: 213 91% 43%;
+
+  /* Sidebar tokens (desktop app shell) — pack uses translucent glass */
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 215 67% 12%;
+  --sidebar-primary: 213 91% 43%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 210 95% 92%;
+  --sidebar-accent-foreground: 213 91% 25%;
+  --sidebar-border: 210 50% 88%;
+  --sidebar-ring: 213 91% 43%;
+
+  /* Radius scale — pack §2 (larger than default) */
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 26px;
+  --radius-xl: 34px;
+
+  /* Domain tokens — civic accents (calibrated against sky palette) */
+  --app-saffron: 30 80% 41%;
+  --app-saffron-soft: 36 89% 91%;
+  --app-emergency: 4 70% 48%;
+  --app-emergency-soft: 4 78% 95%;
+  --app-success: 152 60% 30%;
+  --app-success-soft: 152 50% 93%;
+  --app-navy: 213 91% 25%;
+  --app-navy-soft: 213 50% 94%;
+
+  /* Intensity bins for India heatmap (0..5) — pulled toward pack sky blues */
+  --intensity-0: 210 60% 96%;
+  --intensity-1: 210 80% 88%;
+  --intensity-2: 210 90% 78%;
+  --intensity-3: 210 85% 64%;
+  --intensity-4: 213 85% 50%;
+  --intensity-5: 213 91% 35%;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: hsl(var(--border));
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-plex-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background-color: hsl(210 95% 88%);
+    color: hsl(215 67% 12%);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .anim-fade-in {
+    animation: fade-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .anim-fade-in-slow {
+    animation: fade-in 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .anim-pulse-soft {
+    animation: pulse-soft 2200ms ease-in-out infinite;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 0.65; }
+    50% { opacity: 1; }
+  }
+
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Serif page-title utility (pack §3) */
+  .font-serif-display {
+    font-family: var(--font-newsreader), "Georgia", "Times New Roman", serif;
+    font-feature-settings: "ss01", "ss02";
+    letter-spacing: -0.035em;
+  }
+
+  /* App atmospheric background — pack §6 AppBackground */
+  .app-background {
+    background:
+      linear-gradient(180deg, rgba(190, 225, 255, 0.88) 0%, rgba(244, 251, 255, 0.9) 38%, rgba(215, 237, 255, 0.86) 100%),
+      radial-gradient(ellipse 90% 48% at 18% 3%, rgba(138, 201, 255, 0.48), transparent 62%),
+      radial-gradient(ellipse 60% 42% at 88% 10%, rgba(255, 255, 255, 0.9), transparent 60%),
+      linear-gradient(180deg, #d9efff 0%, #f8fcff 46%, #dff3ff 100%);
+    background-attachment: fixed;
+    min-height: 100dvh;
+    position: relative;
+  }
+
+  .app-background::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background:
+      linear-gradient(180deg, transparent 0 22%, rgba(255, 255, 255, 0.42) 36%, rgba(148, 193, 225, 0.26) 52%, rgba(241, 250, 255, 0.68) 76%, transparent 100%),
+      radial-gradient(ellipse 58% 22% at 20% 47%, rgba(87, 127, 156, 0.16), transparent 67%),
+      radial-gradient(ellipse 60% 24% at 78% 45%, rgba(74, 117, 148, 0.12), transparent 68%);
+    filter: blur(0.2px);
+  }
+
+  .app-background::after {
+    content: "";
+    position: fixed;
+    inset: auto 0 0;
+    height: 42vh;
+    pointer-events: none;
+    z-index: -1;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.58)),
+      repeating-linear-gradient(180deg, rgba(31, 126, 234, 0.05) 0 1px, transparent 1px 18px);
+    mask-image: linear-gradient(to bottom, transparent, black 28%, black);
+  }
+
+  /* Glass panel utility — pack §6 (with reduced-transparency fallback) */
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    box-shadow: 0 24px 80px rgba(20, 70, 120, 0.14);
+  }
+
+  .glass-panel-strong {
+    background: rgba(255, 255, 255, 0.86);
+    backdrop-filter: blur(22px) saturate(140%);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.82);
+    box-shadow: 0 32px 96px rgba(20, 70, 120, 0.18);
+  }
+
+  .glass-panel-muted {
+    background: rgba(248, 252, 255, 0.68);
+    backdrop-filter: blur(14px) saturate(130%);
+    -webkit-backdrop-filter: blur(14px) saturate(130%);
+    border: 1px solid rgba(125, 169, 210, 0.22);
+    box-shadow: 0 12px 32px rgba(20, 70, 120, 0.10);
+  }
+
+  /* Domain: India heatmap state fill (used by IndiaHeatmap) */
+  .map-state {
+    @apply flex flex-col items-start justify-end rounded-[3px] border border-white/70 px-1.5 py-1 text-[10px] font-medium transition-colors;
+  }
+
+  .map-state-bin-0 { fill: hsl(var(--intensity-0)); background-color: hsl(var(--intensity-0)); color: hsl(215 67% 12%); }
+  .map-state-bin-1 { fill: hsl(var(--intensity-1)); background-color: hsl(var(--intensity-1)); color: hsl(215 67% 12%); }
+  .map-state-bin-2 { fill: hsl(var(--intensity-2)); background-color: hsl(var(--intensity-2)); color: hsl(215 67% 12%); }
+  .map-state-bin-3 { fill: hsl(var(--intensity-3)); background-color: hsl(var(--intensity-3)); color: white; }
+  .map-state-bin-4 { fill: hsl(var(--intensity-4)); background-color: hsl(var(--intensity-4)); color: white; }
+  .map-state-bin-5 { fill: hsl(var(--intensity-5)); background-color: hsl(var(--intensity-5)); color: white; }
+
+  .map-state-alert {
+    stroke: hsl(var(--app-emergency));
+    stroke-width: 2.5;
+  }
+
+  .map-state-selected {
+    stroke: hsl(var(--foreground));
+    stroke-width: 2.5;
+  }
+}
+
+@layer components {
+  .scroll-fade-x {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      black 16px,
+      black calc(100% - 24px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      black 16px,
+      black calc(100% - 24px),
+      transparent 100%
+    );
+  }
+}
+
+/* Reduced-transparency fallback for glass surfaces (pack §13 / a11y) */
+@media (prefers-reduced-transparency: reduce) {
+  .glass-panel,
+  .glass-panel-strong,
+  .glass-panel-muted {
+    background: hsl(var(--card));
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* Print stylesheet — Documents page exports as a clean print/PDF file
+   via window.print(). Sidebar, top bar, bottom nav, and all decorative
+   chrome are hidden. The page is rendered as a single column with
+   generous margins. */
+@media print {
+  :root {
+    --background: white;
+    --foreground: black;
+    --card: white;
+    --card-foreground: black;
+    --border: #cccccc;
+  }
+
+  html,
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt;
+    line-height: 1.45;
+  }
+
+  body {
+    font-family: var(--font-plex-sans), "Helvetica", "Arial", sans-serif;
+  }
+
+  /* Hide all chrome */
+  header,
+  footer,
+  nav,
+  aside,
+  [data-app-chrome="true"] {
+    display: none !important;
+  }
+
+  /* Hide interactive controls and decorative elements */
+  button,
+  [role="button"],
+  .no-print,
+  [data-print="hide"] {
+    display: none !important;
+  }
+
+  /* Single column flow */
+  main,
+  [data-print="root"] {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .glass-panel,
+  .glass-panel-strong,
+  .glass-panel-muted {
+    background: white !important;
+    box-shadow: none !important;
+    border: 1px solid #cccccc !important;
+    backdrop-filter: none !important;
+  }
+
+  /* Page break helpers */
+  [data-print="page"] {
+    page-break-after: always;
+  }
+
+  [data-print="keep-together"] {
+    page-break-inside: avoid;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: black !important;
+    page-break-after: avoid;
+  }
+
+  a {
+    color: black !important;
+    text-decoration: underline;
+  }
+
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 9pt;
+    color: #555;
+  }
+}

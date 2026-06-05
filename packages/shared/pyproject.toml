@@ -1,0 +1,12 @@
+[project]
+name = "cybersaathi-shared"
+version = "0.1.0"
+description = "Shared constants for CyberSaathi."
+requires-python = ">=3.11"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]

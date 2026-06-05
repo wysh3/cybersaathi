@@ -1,0 +1,4 @@
+interface:
+  display_name: "CyberSaathi Team Workflow"
+  short_description: "Claim features, choose branches, update team status, and prepare PRs without conflicts."
+  default_prompt: "Use the CyberSaathi team workflow: read team/STATUS.md, identify my assigned feature and blockers, give me the exact branch commands, and tell me what status updates and checks are required."

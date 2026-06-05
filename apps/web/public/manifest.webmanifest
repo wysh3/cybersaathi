@@ -1,0 +1,16 @@
+{
+  "name": "CyberSaathi",
+  "short_name": "CyberSaathi",
+  "description": "AI Emergency Government Navigator for cybercrime",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbfaf7",
+  "theme_color": "#1f4061",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

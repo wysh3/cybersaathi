@@ -1,0 +1,11 @@
+[project]
+name = "cybersaathi"
+version = "0.1.0"
+description = "CyberSaathi monorepo: victim-state engine for cybercrime emergencies."
+requires-python = ">=3.11"
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["apps/api", "packages/*"]

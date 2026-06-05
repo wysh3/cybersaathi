@@ -1,0 +1,11 @@
+{
+  "version": "1.0.0",
+  "generated_at": "2026-06-04T12:00:00+00:00",
+  "rng_seed": 20240601,
+  "counts": {
+    "complaints": 556,
+    "identifiers": 996,
+    "evidence": 556,
+    "clusters": 3
+  }
+}

@@ -1,0 +1,162 @@
+[
+  {
+    "id": "cl-001-accountability",
+    "status": "escalated",
+    "fraud_type": "money_movement_fraud",
+    "member_complaint_ids": [
+      "c-seed-cl1-000",
+      "c-seed-cl1-001",
+      "c-seed-cl1-002",
+      "c-seed-cl1-003",
+      "c-seed-cl1-004",
+      "c-seed-cl1-005",
+      "c-seed-cl1-006",
+      "c-seed-cl1-007",
+      "c-seed-cl1-008",
+      "c-seed-cl1-009",
+      "c-seed-cl1-010",
+      "c-seed-cl1-011",
+      "c-seed-cl1-012",
+      "c-seed-cl1-013",
+      "c-seed-cl1-014",
+      "c-seed-cl1-015",
+      "c-seed-cl1-016",
+      "c-seed-cl1-017",
+      "c-seed-cl1-018",
+      "c-seed-cl1-019",
+      "c-seed-cl1-020",
+      "c-seed-cl1-021",
+      "c-seed-cl1-022",
+      "c-seed-cl1-023",
+      "c-seed-cl1-024",
+      "c-seed-cl1-025",
+      "c-seed-cl1-026",
+      "c-seed-cl1-027",
+      "c-seed-cl1-028",
+      "c-seed-cl1-029",
+      "c-seed-cl1-030",
+      "c-seed-cl1-031",
+      "c-seed-cl1-032",
+      "c-seed-cl1-033",
+      "c-seed-cl1-034",
+      "c-seed-cl1-035",
+      "c-seed-cl1-036",
+      "c-seed-cl1-037",
+      "c-seed-cl1-038",
+      "c-seed-cl1-039",
+      "c-seed-cl1-040",
+      "c-seed-cl1-041",
+      "c-seed-cl1-042",
+      "c-seed-cl1-043",
+      "c-seed-cl1-044",
+      "c-seed-cl1-045",
+      "c-seed-cl1-046",
+      "c-seed-cl1-047",
+      "c-seed-cl1-048",
+      "c-seed-cl1-049",
+      "c-seed-cl1-050",
+      "c-seed-cl1-051",
+      "c-seed-cl1-052",
+      "c-seed-cl1-053",
+      "c-seed-cl1-054",
+      "c-seed-cl1-055"
+    ],
+    "common_identifier_ids": [
+      "4f742a1bbec6",
+      "af2eede9ca8c",
+      "5e8832c8a70b",
+      "45ec56bb2aa0"
+    ],
+    "districts": [
+      "Central Delhi",
+      "East Delhi",
+      "Faridabad",
+      "Gurugram",
+      "Lucknow",
+      "Mumbai",
+      "New Delhi",
+      "Noida",
+      "South Delhi",
+      "West Delhi"
+    ],
+    "states": [
+      "Delhi",
+      "Haryana",
+      "Maharashtra",
+      "Uttar Pradesh"
+    ],
+    "first_report_at": "2026-05-05T22:13:00Z",
+    "latest_report_at": "2026-06-03T02:43:00Z",
+    "total_amount": 2156675.72,
+    "report_count": 56,
+    "trigger_reason": "56 unresolved reports share the same UPI handle, phone, social handle, and message script within a 30-day window."
+  },
+  {
+    "id": "cl-002-jobserver",
+    "status": "monitor",
+    "fraud_type": "money_movement_fraud",
+    "member_complaint_ids": [
+      "c-seed-jb-000",
+      "c-seed-jb-001",
+      "c-seed-jb-002",
+      "c-seed-jb-003",
+      "c-seed-jb-004",
+      "c-seed-jb-005",
+      "c-seed-jb-006",
+      "c-seed-jb-007",
+      "c-seed-jb-008",
+      "c-seed-jb-009",
+      "c-seed-jb-010",
+      "c-seed-jb-011"
+    ],
+    "common_identifier_ids": [
+      "7e921cd3400e",
+      "9d28d186507a"
+    ],
+    "districts": [
+      "Bengaluru Urban",
+      "Hyderabad"
+    ],
+    "states": [
+      "Karnataka",
+      "Telangana"
+    ],
+    "first_report_at": "2026-05-13T07:00:00Z",
+    "latest_report_at": "2026-06-02T23:00:00Z",
+    "total_amount": 72372.42,
+    "report_count": 12,
+    "trigger_reason": null
+  },
+  {
+    "id": "cl-003-refund-phish",
+    "status": "monitor",
+    "fraud_type": "money_movement_fraud",
+    "member_complaint_ids": [
+      "c-seed-ph-000",
+      "c-seed-ph-001",
+      "c-seed-ph-002",
+      "c-seed-ph-003",
+      "c-seed-ph-004",
+      "c-seed-ph-005",
+      "c-seed-ph-006",
+      "c-seed-ph-007"
+    ],
+    "common_identifier_ids": [
+      "88df5f6e2f36"
+    ],
+    "districts": [
+      "Mumbai",
+      "Pune",
+      "Surat"
+    ],
+    "states": [
+      "Gujarat",
+      "Maharashtra"
+    ],
+    "first_report_at": "2026-04-26T03:00:00Z",
+    "latest_report_at": "2026-06-02T00:00:00Z",
+    "total_amount": 42382.6,
+    "report_count": 8,
+    "trigger_reason": null
+  }
+]
