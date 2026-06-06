@@ -196,6 +196,7 @@ class ClientContext(BaseModel):
 class ChatTurnRequest(BaseModel):
     message: str
     evidence_text: Optional[str] = None
+    image_base64: Optional[str] = None  # base64-encoded image for vision model
     client_context: ClientContext = Field(default_factory=ClientContext)
 
 

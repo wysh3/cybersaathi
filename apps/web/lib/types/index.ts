@@ -428,6 +428,7 @@ export interface IntakeChatStartResponse {
 export interface IntakeChatTurnRequest {
   message: string;
   evidence_text?: string | null;
+  image_base64?: string | null;
   client_context?: {
     timezone?: string;
     current_path?: string;

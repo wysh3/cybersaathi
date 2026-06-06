@@ -33,9 +33,9 @@ export function RecoveryOutlookPanel({
               {recovery.low_pct}% – {recovery.high_pct}%
             </Badge>
           </div>
-          <p className="text-sm text-muted-foreground">{recovery.explanation}</p>
+          <p className="text-sm text-muted-foreground break-words">{recovery.explanation}</p>
           <Separator />
-          <ul className="flex flex-col gap-1.5 text-sm text-foreground">
+          <ul className="flex flex-col gap-1.5 text-sm text-foreground break-words">
             {recovery.factors.map((factor) => (
               <li key={factor} className="flex items-start gap-2">
                 <span

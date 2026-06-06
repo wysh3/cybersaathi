@@ -24,9 +24,11 @@ from app.models.llm_intake import (
 )
 from app.services.llm import (
     chat_completion_json,
+    chat_completion_vision,
     extract_content,
     extract_usage,
     get_intake_model,
+    get_vision_model,
     is_llm_enabled,
 )
 from app.services.llm_intake.guardrails import (
@@ -52,20 +54,58 @@ def _load_prompt(name: str) -> str:
 
 
 _SYSTEM_PROMPT = ""
-_DEVELOPER_CONTEXT = ""
-
 
 def _ensure_prompts_loaded() -> None:
-    global _SYSTEM_PROMPT, _DEVELOPER_CONTEXT
+    global _SYSTEM_PROMPT
     if not _SYSTEM_PROMPT:
         _SYSTEM_PROMPT = _load_prompt("system.md")
-    if not _DEVELOPER_CONTEXT:
-        _DEVELOPER_CONTEXT = _load_prompt("developer_context.md")
 
 
 # ---------------------------------------------------------------------------
 # Deterministic fallback
 # ---------------------------------------------------------------------------
+
+
+def _enrich_snapshot_with_det_facts(
+    snapshot: CaseStateSnapshot,
+    det_facts,
+    det_routing,
+) -> CaseStateSnapshot:
+    """Quickly merge deterministic facts into snapshot for context building.
+    
+    This gives the LLM visibility into already-extracted UTR, amount, bank,
+    payment app, etc. so it doesn't ask redundant questions.
+    Does NOT derive missing fields or set next_action — that's reducer's job.
+    """
+    enriched = snapshot.model_copy(deep=True)
+    f = enriched.facts
+    
+    if det_facts.utr and not f.utr:
+        f.utr = det_facts.utr
+    if det_facts.upi_id and not f.upi_id:
+        f.upi_id = det_facts.upi_id
+    if det_facts.amount and not f.amount:
+        f.amount = det_facts.amount
+        enriched.amount = det_facts.amount
+    if det_facts.bank and not f.bank:
+        f.bank = det_facts.bank
+    if det_facts.payment_app and not f.payment_app:
+        f.payment_app = det_facts.payment_app
+    if det_facts.phone and not f.phone:
+        f.phone = det_facts.phone
+    if det_facts.timestamp and not f.timestamp:
+        ts = det_facts.timestamp
+        f.timestamp = ts if isinstance(ts, str) else ts.isoformat() if hasattr(ts, 'isoformat') else str(ts)
+    if det_routing and not enriched.routing:
+        from app.models.llm_intake import CaseRouting
+        enriched.routing = CaseRouting(
+            pipeline=det_routing.pipeline,
+            confidence=det_routing.confidence,
+            golden_hour_remaining_seconds=det_routing.golden_hour_remaining_seconds,
+            is_financial=det_routing.is_financial,
+        )
+    
+    return enriched
 
 
 def _build_fallback_output(
@@ -108,7 +148,7 @@ def _build_fallback_output(
 
 
 def _build_confirm_text(snapshot: CaseStateSnapshot) -> str:
-    parts = ["I found these details from what you shared. Please confirm:"]
+    parts = ["Here's what I found from your description. Please check if this looks right:"]
     if snapshot.fraud_type and snapshot.fraud_type != "unknown":
         parts.append(f"• Type: {snapshot.fraud_type.replace('_', ' ')}")
     if snapshot.payment_method and snapshot.payment_method not in ("unknown", "auto"):
@@ -121,7 +161,7 @@ def _build_confirm_text(snapshot: CaseStateSnapshot) -> str:
         parts.append(f"• UTR: {snapshot.facts.utr}")
     if snapshot.routing:
         parts.append(f"• Route: {snapshot.routing.pipeline.replace('_', ' ')}")
-    parts.append("\nIf correct, click Confirm. If wrong, tell me what to fix.")
+    parts.append("\nIf this looks right, click Confirm. If something is wrong, tell me what to fix.")
     return "\n".join(parts)
 
 
@@ -155,14 +195,13 @@ class LlmIntakeOrchestrator:
         user_message: str,
         evidence_text: Optional[str],
         conversation_history: list[dict[str, Any]],
+        image_base64: Optional[str] = None,
     ) -> dict[str, Any]:
         """Process a single user turn.
 
-        Returns a dict with:
-          - llm_output: LlmOutput
-          - case_snapshot: CaseStateSnapshot
-          - invocation_summary: dict (for audit trail)
-          - used_llm: bool
+        If image_base64 is provided, the vision model extracts text from
+        the image first. That text is merged into evidence_text for
+        deterministic extraction and LLM context.
         """
         # Check input safety
         input_flags = get_input_safety_flags(user_message)
@@ -174,9 +213,30 @@ class LlmIntakeOrchestrator:
         from app.services.routing import route_intake
         from app.services.redaction import redact_text
 
+        # If an image is attached, run vision extraction first.
+        # The extracted text becomes additional evidence for deterministic extraction.
+        vision_text: Optional[str] = None
+        if image_base64 and is_llm_enabled():
+            try:
+                vision_response = await chat_completion_vision(
+                    image_base64,
+                    temperature=0.1,
+                    max_tokens=800,
+                )
+                vision_text = extract_content(vision_response).strip()
+            except Exception:
+                vision_text = None  # Vision failed, continue with text-only
+
+        # Merge vision text into evidence (vision text comes after user message)
+        combined_evidence = evidence_text
+        if vision_text:
+            combined_evidence = (
+                (evidence_text + "\n") if evidence_text else ""
+            ) + vision_text
+
         intake_req = IntakeRequest(
             description=user_message,
-            evidence_text=evidence_text,
+            evidence_text=combined_evidence,
             incident_at=None,
             amount=current_snapshot.amount,
             payment_method=current_snapshot.payment_method
@@ -190,7 +250,7 @@ class LlmIntakeOrchestrator:
         det_routing = route_intake(intake_req)
         det_facts = extract_facts(
             description=user_message,
-            evidence_text=evidence_text,
+            evidence_text=combined_evidence,
             amount_hint=current_snapshot.amount,
             incident_at=None,
         )
@@ -248,6 +308,12 @@ class LlmIntakeOrchestrator:
             }
 
         # --- LLM path ---
+        # Pre-enrich snapshot with deterministic extraction before building
+        # context, so the LLM sees already-extracted UTR, amount, bank, etc.
+        enriched = _enrich_snapshot_with_det_facts(
+            current_snapshot, det_facts, det_routing
+        )
+        
         # Build redacted conversation history
         redacted_history: list[dict[str, str]] = []
         for msg in conversation_history[-10:]:  # Last 10 messages
@@ -257,9 +323,9 @@ class LlmIntakeOrchestrator:
                 "content": content[:500],  # Truncate long messages
             })
 
-        # Build context packet
+        # Build context packet using enriched snapshot
         context = build_context_packet(
-            snapshot=current_snapshot,
+            snapshot=enriched,
             current_phase=current_phase,
             last_messages=redacted_history,
             user_message=redact_text(user_message),
@@ -268,7 +334,6 @@ class LlmIntakeOrchestrator:
         # Build messages for NIM
         messages = [
             {"role": "system", "content": _SYSTEM_PROMPT},
-            {"role": "developer", "content": _DEVELOPER_CONTEXT},
             {"role": "user", "content": context},
         ]
 
@@ -279,7 +344,7 @@ class LlmIntakeOrchestrator:
                 messages,
                 model=get_intake_model(),
                 temperature=0.1,
-                max_tokens=1200,
+                max_tokens=2000,
             )
             latency_ms = int((time.monotonic() - start_time) * 1000)
             raw_content = extract_content(response)
@@ -305,7 +370,7 @@ class LlmIntakeOrchestrator:
                         repair_messages,
                         model=get_intake_model(),
                         temperature=0.1,
-                        max_tokens=1200,
+                        max_tokens=2000,
                     )
                     latency_ms = int((time.monotonic() - start_time) * 1000)
                     raw_content = extract_content(response2)
@@ -344,6 +409,7 @@ class LlmIntakeOrchestrator:
                         "token_usage": usage,
                     },
                     "used_llm": True,
+                    "vision_text": vision_text,
                 }
 
             # Merge with deterministic services
@@ -353,7 +419,7 @@ class LlmIntakeOrchestrator:
                 deterministic_facts=det_facts,
                 deterministic_routing=det_routing,
                 user_message=user_message,
-                evidence_text=evidence_text,
+                evidence_text=combined_evidence,
             )
 
             return {
@@ -367,6 +433,7 @@ class LlmIntakeOrchestrator:
                     "token_usage": usage,
                 },
                 "used_llm": True,
+                "vision_text": vision_text,
             }
 
         except Exception as e:

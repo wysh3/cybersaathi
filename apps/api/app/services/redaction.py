@@ -12,6 +12,14 @@ from typing import Iterable
 
 
 # Order matters: longer / more specific patterns must run first.
+# UTR / transaction reference numbers — these are NOT account numbers and
+# must be preserved. Matched BEFORE the account_long pattern.
+_UTR_PRESERVE_RE = re.compile(
+    r"(?i)\b(utr|txn\s*(?:id|ref)?|reference\s*(?:no|number)?|tx)"
+    r"[\w\s:#=-]{0,30}[\n\r]\s*(\d{8,18})\b"
+)
+_UTR_PLACEHOLDER = "__UTR_PRESERVED_{num}__"
+
 _PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
         "card",
@@ -71,17 +79,37 @@ def redact_text(text: str, *, labels: Iterable[str] | None = None) -> str:
     it is obvious to operators that a value was scrubbed. If you pass
     ``labels``, only the listed pattern keys are redacted; otherwise all
     patterns run.
+
+    UTR / transaction reference numbers are preserved — these are NOT account
+    numbers and are critical for tracking fraud transactions.
     """
 
     if not text:
         return text
     allowed = set(labels) if labels is not None else None
-    out = text
+
+    # Preserve UTR numbers before redaction — they'd be incorrectly caught
+    # by the account_long pattern. We replace them with placeholders, run
+    # redaction, then restore.
+    utr_map: dict[str, str] = {}
+    def _preserve_utr(m: re.Match[str]) -> str:
+        num = m.group(2)
+        placeholder = _UTR_PLACEHOLDER.format(num=num)
+        utr_map[placeholder] = m.group(0)
+        return placeholder
+
+    out = _UTR_PRESERVE_RE.sub(_preserve_utr, text)
+
     for name, pattern in _PATTERNS:
         if allowed is not None and name not in allowed:
             continue
         replacement = f"[REDACTED:{name.upper()}]"
         out = pattern.sub(replacement, out)
+
+    # Restore UTR placeholders to original values
+    for placeholder, original in utr_map.items():
+        out = out.replace(placeholder, original)
+
     return out
 
 
@@ -90,11 +118,23 @@ def redact_text_keep_keywords(text: str) -> str:
 
     This is used by the evidence storage layer to be conservative: we only
     remove the digits, never the surrounding context word.
+
+    UTR numbers are preserved (not redacted) as in redact_text.
     """
 
     if not text:
         return text
-    out = text
+
+    # Preserve UTR numbers before redaction
+    utr_map: dict[str, str] = {}
+    def _preserve_utr(m: re.Match[str]) -> str:
+        num = m.group(2)
+        placeholder = _UTR_PLACEHOLDER.format(num=num)
+        utr_map[placeholder] = m.group(0)
+        return placeholder
+
+    out = _UTR_PRESERVE_RE.sub(_preserve_utr, text)
+
     # Run all patterns except aadhaar.
     for name, pattern in _PATTERNS:
         if name == "aadhaar":
@@ -106,6 +146,11 @@ def redact_text_keep_keywords(text: str) -> str:
         r"(?is)\b(aadhaar|uid(?:ai)?|aadhar)\b[^0-9\n]{0,24}?\d{4}\s?\d{4}\s?\d{4}"
     )
     out = aadhaar_pattern.sub(r"\1 [REDACTED:AADHAAR]", out)
+
+    # Restore UTR placeholders
+    for placeholder, original in utr_map.items():
+        out = out.replace(placeholder, original)
+
     return out
 
 

@@ -235,11 +235,23 @@ async def chat_turn(
                 user_message=body.message,
                 evidence_text=body.evidence_text,
                 conversation_history=history,
+                image_base64=body.image_base64,
             )
 
             llm_output = result["llm_output"]
             snapshot = result["case_snapshot"]
             inv_summary = result["invocation_summary"]
+            vision_text = result.get("vision_text")
+
+            # Store vision-extracted text as evidence
+            if vision_text:
+                await repo.create_message(
+                    conversation_id=conversation_id,
+                    role="user",
+                    content_redacted=redact_text(vision_text),
+                    message_kind="evidence",
+                    message_meta={"source": "vision_model"},
+                )
 
             # Save LLM invocation
             from app.services.llm import get_intake_model
@@ -256,12 +268,35 @@ async def chat_turn(
                 token_usage=inv_summary.get("token_usage", {}),
             )
 
-            assistant_text = (
-                _build_deterministic_message(snapshot)
-                if snapshot.next_action != llm_output.next_action
-                or snapshot.next_action == "confirm_facts"
-                else llm_output.assistant_message
-            )
+            # Use LLM message when available, fall back to deterministic.
+            # confirm_facts always uses structured message (better UX for review).
+            # For ask_followup: prefer LLM's natural message, but if the LLM
+            # missed fields the reducer identified, append a gentle nudge.
+            if snapshot.next_action == "confirm_facts":
+                assistant_text = _build_confirm_message(snapshot)
+            elif llm_output.assistant_message and llm_output.assistant_message.strip():
+                # Trust the LLM's judgment on what to ask next.
+                # The context packet already tells it which fields are missing.
+                assistant_text = llm_output.assistant_message
+                # Guard: if LLM is asking for a field that's already extracted,
+                # override with a question about the actual next missing field.
+                if snapshot.missing_required_fields:
+                    assistant_text = _guard_redundant_question(
+                        assistant_text, snapshot, llm_output
+                    )
+                # Guard: if LLM asked multiple questions, keep only the first one.
+                if assistant_text.count("?") > 1:
+                    # Split on paragraph boundaries, keep up to and including
+                    # the first paragraph that contains a question mark.
+                    paragraphs = assistant_text.split("\n\n")
+                    kept: list[str] = []
+                    for para in paragraphs:
+                        kept.append(para)
+                        if "?" in para:
+                            break
+                    assistant_text = "\n\n".join(kept)
+            else:
+                assistant_text = _build_deterministic_message(snapshot)
             used_llm = result.get("used_llm", False)
         except Exception:
             # LLM failed entirely, use deterministic
@@ -699,9 +734,54 @@ def _derive_missing_fields(snapshot: CaseStateSnapshot) -> list[str]:
     return missing
 
 
+def _guard_redundant_question(
+    assistant_text: str,
+    snapshot: CaseStateSnapshot,
+    llm_output,
+) -> str:
+    """If the LLM is asking about a field we already have, override with better question."""
+    lower = assistant_text.lower()
+    f = snapshot.facts
+
+    # Map known facts to keywords the LLM would use to ask about them
+    already_known: dict[str, bool] = {
+        "upi_id": bool(f.upi_id),
+        "utr": bool(f.utr),
+        "amount": bool(snapshot.amount or f.amount),
+        "bank": bool(f.bank),
+        "payment_app": bool(f.payment_app),
+        "phone": bool(f.phone),
+        "district": bool(snapshot.location.district),
+        "fraud_type": bool(snapshot.fraud_type and snapshot.fraud_type != "unknown"),
+        "payment_method": bool(snapshot.payment_method and snapshot.payment_method not in ("unknown", "auto")),
+        "incident_at": bool(snapshot.incident_at),
+    }
+
+    # Check if LLM is asking for something already known
+    redundant_keywords = {
+        "upi_id": ["upi id", "upi-id", "upi address", "which upi", "what upi"],
+        "utr": ["utr", "transaction reference", "reference number", "txn id"],
+        "amount": ["how much", "amount", "what amount", "rs"],
+        "bank": ["which bank", "what bank", "bank name"],
+        "payment_app": ["which app", "what app", "google pay", "phonepe", "paytm"],
+        "phone": ["phone number", "mobile number", "contact number"],
+        "district": ["district", "which city", "where are you", "your location"],
+    }
+
+    for field, known in already_known.items():
+        if not known:
+            continue
+        keywords = redundant_keywords.get(field, [])
+        if any(kw in lower for kw in keywords):
+            # LLM is asking about something we already know — override
+            return _build_followup_message(snapshot)
+
+    return assistant_text
+
+
 def _build_confirm_message(snapshot: CaseStateSnapshot) -> str:
-    """Build a confirmation message summarizing extracted facts."""
-    parts = ["I found these details from what you shared. Please confirm:"]
+    """Build a warm confirmation message summarizing extracted facts."""
+    parts = ["Here's what I found from your description. Please check if this looks right:"]
     if snapshot.fraud_type and snapshot.fraud_type != "unknown":
         parts.append(f"• Type: {snapshot.fraud_type.replace('_', ' ')}")
     if snapshot.payment_method and snapshot.payment_method not in ("unknown", "auto"):
@@ -719,24 +799,43 @@ def _build_confirm_message(snapshot: CaseStateSnapshot) -> str:
 
 
 def _build_followup_message(snapshot: CaseStateSnapshot) -> str:
-    """Build a follow-up question for missing info."""
+    """Build a warm, context-aware follow-up question for missing info."""
     missing = snapshot.missing_required_fields
     if not missing:
         return "Let me confirm what I found. Is everything above correct?"
 
+    # Build context about what we already know
+    found: list[str] = []
+    if snapshot.fraud_type and snapshot.fraud_type != "unknown":
+        found.append(snapshot.fraud_type.replace("_", " "))
+    if snapshot.amount:
+        found.append(f"Rs {snapshot.amount:,.0f}")
+    if snapshot.payment_method and snapshot.payment_method not in ("unknown", "auto"):
+        found.append(snapshot.payment_method.upper())
+
     field_prompts = {
-        "fraud_type": "What type of fraud happened?",
-        "payment_method": "How did you pay — UPI, card, or netbanking?",
-        "amount": "How much money was involved?",
-        "incident_at": "About how many minutes or hours ago did this happen?",
-        "location.district": "Which district are you in?",
-        "receiver_identifier": "Do you have the UPI ID, phone number, or account you sent money to?",
+        "fraud_type": "What kind of fraud happened — was it a UPI payment, a card transaction, or something else?",
+        "payment_method": "How did you send the money — through UPI, card, or netbanking?",
+        "amount": "How much money was involved? Even a rough estimate helps.",
+        "incident_at": "About how many minutes or hours ago did this happen? This helps us decide the most urgent next step.",
+        "location.district": "Which district are you in? This helps us prepare the right jurisdiction details.",
+        "receiver_identifier": "Do you remember the UPI ID, phone number, or account number you sent the money to?",
     }
 
+    # Single missing field — warm, contextual
     if len(missing) == 1:
-        prompt = field_prompts.get(missing[0], f"Can you tell me about: {missing[0]}?")
+        field = missing[0]
+        prompt = field_prompts.get(field, f"Can you tell me about: {field}?")
+        if found:
+            return f"Thank you. I can see this was {', '.join(found)}. {prompt}"
         return prompt
 
-    first = field_prompts.get(missing[0], missing[0])
-    second = field_prompts.get(missing[1], missing[1]) if len(missing) > 1 else ""
-    return f"I need a bit more to help. First: {first} Also, {second}"
+    # Multiple missing — pick the most important one first
+    first = missing[0]
+    first_prompt = field_prompts.get(first, first.replace("_", " "))
+    if found:
+        return (
+            f"Thank you for sharing that — I can see this was {', '.join(found)}. "
+            f"To help you better, {first_prompt.lower() if first_prompt[0].isupper() else first_prompt}"
+        )
+    return f"I need a bit more to guide you properly. First — {first_prompt}"

@@ -22,11 +22,12 @@ import {
   Loader2,
   MessageSquare,
   Mic,
+  Plus,
   Receipt,
+  Search,
   Send,
   Shield,
   ShieldCheck,
-  Sparkles,
   WandSparkles,
   X,
 } from "lucide-react";
@@ -176,8 +177,12 @@ export function ChatIntakeComposer() {
   const [submitting, setSubmitting] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [showEvidencePanel, setShowEvidencePanel] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageIdCounter = useRef(0);
+  const prevMsgCount = useRef(0);
 
   // Derived state
   const hasMessages = chatMessages.length > 1;
@@ -186,10 +191,20 @@ export function ChatIntakeComposer() {
   const canConfirm =
     caseSnapshot?.next_action === "confirm_facts";
   const currentStep = canConfirm ? 4 : hasMessages ? 2 : 1;
+  // Chat started — pill has been expanded
+  const chatStarted = hasMessages;
 
-  // Auto-scroll
+  // Auto-scroll only when a new message arrives (not on every re-render).
+  // Use instant scroll to prevent the chat from visually "jumping up."
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const count = chatMessages.length;
+    if (count > prevMsgCount.current) {
+      prevMsgCount.current = count;
+      // Small delay so the DOM has painted the new message
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
+      });
+    }
   }, [chatMessages]);
 
   // Start conversation
@@ -216,28 +231,47 @@ export function ChatIntakeComposer() {
   // Actions
   // ------------------------------------------------------------------
 
-  async function sendMessage() {
-    const text = input.trim();
-    if (!text || !conversationId) return;
+  async function sendMessage(customText?: string, customEvidence?: string) {
+    const text = (customText !== undefined ? customText : input).trim();
+    if (!text && !imageFile) return;
+    if (!conversationId) return;
     setSubmitting(true);
     setError(null);
 
+    // Convert image to base64 for sending
+    let imageBase64: string | null = null;
+    if (imageFile) {
+      imageBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          // Strip the data:image/...;base64, prefix
+          const base64 = result.split(",")[1] || result;
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(imageFile);
+      });
+    }
+
     const msgId = `local-${++messageIdCounter.current}`;
+    const displayText = text || (imageFile ? "Image attached" : "");
     const userMsg: ChatMessage = {
       id: msgId,
       conversation_id: conversationId,
       role: "user",
-      content_redacted: text,
+      content_redacted: displayText,
       message_kind: "chat",
-      metadata: {},
+      metadata: imageFile ? { has_image: true, image_preview: imagePreview } : {},
       created_at: new Date().toISOString(),
     };
     appendChatMessages([userMsg]);
 
     const sentInput = text;
-    const sentEvidence = showEvidencePanel ? evidenceText : null;
+    const sentEvidence = customEvidence !== undefined ? customEvidence : (showEvidencePanel ? evidenceText : null);
     setInput("");
-    if (showEvidencePanel) {
+    clearImage();
+    if (showEvidencePanel || customEvidence) {
       setEvidenceText("");
       setShowEvidencePanel(false);
       setActiveMethod("write");
@@ -245,8 +279,9 @@ export function ChatIntakeComposer() {
 
     try {
       const response = await api.sendIntakeChatTurn(conversationId, {
-        message: sentInput,
+        message: sentInput || "Image attached — extract text.",
         evidence_text: sentEvidence,
+        image_base64: imageBase64 || undefined,
       });
       appendChatMessages([response.assistant_message]);
       setCaseSnapshot(response.case_snapshot);
@@ -371,12 +406,25 @@ export function ChatIntakeComposer() {
   }
 
   function applyScenario(scenario: Scenario) {
-    setInput(scenario.description);
     if (scenario.evidence) {
       setEvidenceText(scenario.evidence);
       setActiveMethod("sms");
       setShowEvidencePanel(true);
     }
+    sendMessage(scenario.description, scenario.evidence);
+  }
+
+  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  }
+
+  function clearImage() {
+    // Don't revoke — the URL may still be referenced by a chat bubble
+    setImageFile(null);
+    setImagePreview(null);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -397,356 +445,220 @@ export function ChatIntakeComposer() {
   // Render
   // ------------------------------------------------------------------
 
+  // Typing animation state
+  const FULL_TITLE = "One Portal. Every Cyber Emergency.";
+  const [typedChars, setTypedChars] = useState(0);
+  const [typingDone, setTypingDone] = useState(false);
+
+  useEffect(() => {
+    if (chatStarted) return;
+    if (typedChars < FULL_TITLE.length) {
+      const ch = FULL_TITLE[typedChars] || "";
+      // Fast initial burst then slow down
+      const delay = typedChars < 12 ? 18 : ch === "." || ch === " " ? 110 : 32;
+      const t = setTimeout(() => setTypedChars((c) => c + 1), delay);
+      return () => clearTimeout(t);
+    }
+    const doneTimer = setTimeout(() => setTypingDone(true), 300);
+    return () => clearTimeout(doneTimer);
+  }, [typedChars, chatStarted, FULL_TITLE]);
+
   const primaryScenario = SAMPLE_SCENARIOS.find((s) => s.isPrimary);
   const otherScenarios = SAMPLE_SCENARIOS.filter((s) => !s.isPrimary);
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-7">
-      {/* ---- Header Row ---- */}
-      <div className="grid items-end gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
-        <PageHeader
-          eyebrow={
-            <span className="inline-flex items-center gap-1.5">
-              <Sparkles className="size-3" aria-hidden />
-              Emergency intake
-            </span>
-          }
-          title="What happened?"
-          description="Describe the incident in your own words. Our AI will guide you to the right steps."
-        />
-        <CompactProgress currentStep={currentStep} />
-      </div>
-
-      {/* ---- Main Content ---- */}
-      <div
-        className={cn(
-          "grid min-w-0 gap-6",
-          hasMessages
-            ? "lg:grid-cols-[1.2fr_0.8fr]"
-            : "lg:grid-cols-1",
-        )}
-      >
-        {/* ======== LEFT: Chat Panel ======== */}
-        <div className="flex min-w-0 flex-col gap-5">
-          <GlassPanel
-            variant="strong"
-            className="flex flex-col overflow-hidden rounded-[32px]"
-          >
-            {/* --- Messages area --- */}
-            <div className="flex min-h-[420px] flex-1 flex-col gap-4 overflow-y-auto px-5 py-6 sm:px-8">
-              {chatMessages.length === 0 ? (
-                <div className="flex flex-1 items-center justify-center">
-                  <Loader2 className="size-5 animate-spin text-sky-500" />
-                </div>
-              ) : (
-                <>
-                  {chatMessages.map((msg, i) => (
-                    <ChatBubble key={msg.id || i} msg={msg} />
-                  ))}
-
-                  {submitting && (
-                    <div className="flex items-start gap-3">
-                      <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-700 shadow-glass-soft">
-                        <Shield className="size-3.5" />
-                      </span>
-                      <div className="flex items-center gap-2 rounded-2xl rounded-bl-md bg-white/85 px-5 py-4 shadow-glass-soft">
-                        <Loader2 className="size-4 animate-spin text-sky-500" />
-                        <span className="text-sm text-ink-500">Thinking…</span>
-                      </div>
-                    </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </>
-              )}
-            </div>
-
-            {/* --- Evidence panel (shown when method=sms or screenshot is active) --- */}
-            {showEvidencePanel && (
-              <div className="border-t border-sky-100/60 bg-white/50 px-5 pb-4 pt-4 sm:px-8">
-                <div className="mb-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {activeMethod === "sms" ? (
-                      <MessageSquare className="size-4 text-sky-600" />
-                    ) : (
-                      <ImageIcon className="size-4 text-sky-600" />
-                    )}
-                    <span className="text-xs font-semibold text-ink-700">
-                      {activeMethod === "sms"
-                        ? "Pasted evidence"
-                        : "Uploaded file"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {activeMethod === "sms" && !evidenceText && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={useSampleGPaySms}
-                      >
-                        <Receipt aria-hidden className="size-3.5" />
-                        <span className="ml-1 text-xs">Use sample GPay SMS</span>
-                      </Button>
-                    )}
-                    <button
-                      onClick={() => {
-                        setEvidenceText("");
-                        setShowEvidencePanel(false);
-                        setActiveMethod("write");
-                      }}
-                      className="inline-flex size-7 items-center justify-center rounded-full bg-ink-100/50 text-ink-500 transition-colors hover:bg-ink-200/50"
-                    >
-                      <X className="size-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-                {activeMethod === "sms" ? (
-                  <Textarea
-                    rows={4}
-                    placeholder="Paste the SMS, WhatsApp message, or email text here."
-                    value={evidenceText}
-                    onChange={(e) => setEvidenceText(e.target.value)}
-                    className="border-sky-200/70 bg-white text-sm"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-sky-200 bg-white/60 px-4 py-6 text-center">
-                    <ImageIcon className="size-6 text-sky-600" aria-hidden />
-                    <p className="text-sm text-ink-700">
-                      We never read images — paste the text below or type it.
-                    </p>
-                    <Input
-                      type="file"
-                      accept="image/*,text/plain"
-                      className="max-w-xs cursor-pointer"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const text = await file.text();
-                        setEvidenceText(text);
-                        setActiveMethod("sms");
-                        toast.success("Text extracted from file");
-                      }}
-                    />
-                  </div>
+    <div className="mx-auto flex w-full flex-col items-center">
+      {/* ============================================================ */}
+      {/* HERO MODE — typing animation + pill input                    */}
+      {/* ============================================================ */}
+      {!chatStarted ? (
+        <div className="flex w-full max-w-4xl flex-col items-start px-4 pb-16 pt-10 md:px-8 md:pt-16">
+          <h1 className="mb-6 text-left font-serif text-5xl font-normal leading-[1.05] tracking-tight text-ink-900 sm:text-6xl md:text-7xl">
+            {FULL_TITLE.split("").map((ch, i) => (
+              <span
+                key={i}
+                className={cn(
+                  "transition-all duration-[50ms] ease-out",
+                  i < typedChars
+                    ? "translate-y-0 opacity-100 blur-none"
+                    : "translate-y-[2px] opacity-0 blur-[3px]",
                 )}
-
-                {activeMethod === "sms" ? (
-                  <p className="mt-2 text-xs text-ink-500">
-                    The full SMS — UTR, UPI ID, amount, timestamp — gives the
-                    most accurate extraction.
-                  </p>
-                ) : null}
-              </div>
-            )}
-
-            {/* --- Input area --- */}
-            <div className="border-t border-sky-100/60 bg-white/50 px-5 pb-5 pt-4 sm:px-8">
-              {/* Method cards */}
-              <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {METHOD_CARDS.map((method) => {
-                  const Icon = method.icon;
-                  const active = activeMethod === method.id;
-                  return (
-                    <button
-                      type="button"
-                      key={method.id}
-                      onClick={() => {
-                        setActiveMethod(method.id);
-                        if (method.id === "sms") setShowEvidencePanel(true);
-                        if (method.id === "screenshot") setShowEvidencePanel(true);
-                        if (method.id === "voice") {
-                          setIsListening(!isListening);
-                          toast.info("Voice input is a stub in the MVP");
-                        }
-                        if (method.id === "write") setShowEvidencePanel(false);
-                      }}
-                      aria-pressed={active}
-                      className={cn(
-                        "group flex items-center gap-3 rounded-[18px] border px-4 py-3 text-left transition-colors",
-                        active
-                          ? "border-sky-300/80 bg-white/82 ring-2 ring-sky-300/50 shadow-glass-soft"
-                          : "border-white/70 bg-white/58 hover:border-sky-300/70 hover:bg-white/80 shadow-glass-soft",
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "inline-flex size-9 shrink-0 items-center justify-center rounded-xl",
-                          active
-                            ? "bg-sky-600 text-white"
-                            : "bg-sky-100/80 text-sky-700",
-                        )}
-                      >
-                        <Icon className="size-4" aria-hidden />
-                      </span>
-                      <span className="flex min-w-0 flex-col gap-0.5">
-                        <span className="text-sm font-semibold text-ink-900">
-                          {method.label}
-                        </span>
-                        <span className="hidden text-xs leading-5 text-ink-500 sm:block">
-                          {method.description}
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Voice stub */}
-              {activeMethod === "voice" && (
-                <div className="mb-4 flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-sky-200 bg-white/60 px-4 py-5 text-center">
-                  <Mic
-                    className={cn(
-                      "size-6",
-                      isListening ? "text-emergency" : "text-sky-600",
-                    )}
-                    aria-hidden
-                  />
-                  <p className="text-sm text-ink-700">
-                    Voice recognition is a stub. Type your description below.
-                  </p>
-                  <Button
-                    type="button"
-                    variant={isListening ? "destructive" : "outline"}
-                    size="sm"
-                    onClick={() => setIsListening((v) => !v)}
-                    aria-pressed={isListening}
-                  >
-                    {isListening ? "Stop (stub)" : "Start (stub)"}
-                  </Button>
-                </div>
-              )}
-
-              {/* Text input + send */}
-              <div className="relative flex flex-col">
-                <Textarea
-                  rows={3}
-                  placeholder="Type to describe the incident…"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="min-h-[80px] resize-none rounded-[24px] border-white/70 bg-white/58 px-5 py-4 pr-20 text-base leading-relaxed text-ink-900 shadow-glass-soft placeholder:text-ink-500/80 focus-visible:ring-sky-400/60"
-                />
-                <div className="pointer-events-none absolute inset-x-4 bottom-3 flex items-center justify-between gap-3">
-                  <span className="text-xs font-medium text-ink-400">
-                    {input.length}/4000
-                  </span>
-                  <span className="pointer-events-auto">
-                    <Button
-                      type="button"
-                      size="icon"
-                      disabled={submitting || !input.trim()}
-                      onClick={sendMessage}
-                      className="size-11 rounded-full bg-sky-600 shadow-glass-soft hover:bg-sky-700"
-                      aria-label="Send message"
-                    >
-                      {submitting ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        <Send className="size-4" />
-                      )}
-                    </Button>
-                  </span>
-                </div>
-              </div>
+              >
+                {ch}
+              </span>
+            ))}
+          </h1>
+          <p className={cn(
+            "mb-10 max-w-md text-left text-base font-normal leading-relaxed text-ink-500 transition-all duration-700 ease-out sm:text-lg",
+            typingDone ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
+          )}>
+            Simple. Secure. Supportive.<br className="hidden sm:inline" />
+            Cybercrime emergency guidance, designed around you.
+          </p>
+          <div className={cn(
+            "group relative mb-10 w-full max-w-2xl transition-all duration-700 delay-100 ease-out",
+            typingDone ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
+          )}>
+            <div className="flex w-full items-center rounded-full border border-white/80 bg-white/95 py-2 pl-3 pr-2 shadow-glass backdrop-blur-xl transition-all focus-within:bg-white focus-within:ring-2 focus-within:ring-sky-200/50">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white/80 text-ink-400 transition-colors hover:bg-sky-50 hover:text-sky-500"
+                aria-label="Add image"
+              >
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Preview" className="size-5 rounded-full object-cover" />
+                ) : (
+                  <Plus className="size-5" />
+                )}
+              </button>
+              <input
+                type="text"
+                placeholder="Describe what happened (e.g., UPI fraud 15 minutes ago)…"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="flex-1 border-0 bg-transparent px-3 py-3 text-base text-ink-900 outline-none placeholder:text-ink-500/50 focus:outline-none focus:ring-0"
+              />
+              <button
+                type="button"
+                onClick={() => sendMessage()}
+                disabled={submitting || !input.trim()}
+                className="flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-full bg-sky-500 shadow-glass-soft transition-all duration-200 hover:bg-sky-600 disabled:opacity-40"
+                aria-label="Submit intake description"
+              >
+                {submitting ? (
+                  <Loader2 className="size-5 animate-spin text-white" />
+                ) : (
+                  <Search className="size-5 text-white" />
+                )}
+              </button>
             </div>
-          </GlassPanel>
+          </div>
 
-          {/* Scenario chips */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-ink-800">
-                Common examples
-              </p>
-              <p className="hidden text-xs text-ink-500 sm:block">
-                Pick one to prefill the demo.
-              </p>
-            </div>
-            <div className="scroll-fade-x flex flex-nowrap gap-3 overflow-x-auto pb-1">
-              {primaryScenario ? (
-                <button
-                  type="button"
-                  onClick={() => applyScenario(primaryScenario)}
-                  className="inline-flex h-14 shrink-0 items-center gap-3 rounded-[18px] border border-white/75 bg-white/65 px-6 text-sm font-semibold text-ink-800 shadow-glass-soft transition-colors hover:bg-white"
-                >
-                  <Receipt className="size-4 text-sky-700" aria-hidden />
-                  {primaryScenario.label}
-                </button>
-              ) : null}
-              {otherScenarios.map((scenario) => (
+          {/* Common scenario suggestions */}
+          <div className={cn(
+            "flex w-full max-w-2xl flex-col gap-3 text-left transition-all duration-700 delay-200 ease-out",
+            typingDone ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
+          )}>
+            <p className="text-xs font-semibold uppercase tracking-wider text-ink-500">
+              Or select a demo scenario
+            </p>
+            <div className="flex flex-wrap gap-2.5">
+              {SAMPLE_SCENARIOS.map((scenario) => (
                 <button
                   key={scenario.id}
                   type="button"
                   onClick={() => applyScenario(scenario)}
-                  className="inline-flex h-14 shrink-0 items-center gap-3 rounded-[18px] border border-white/75 bg-white/56 px-6 text-sm font-semibold text-ink-800 shadow-glass-soft transition-colors hover:bg-white"
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/80 bg-white/60 px-4 py-2.5 text-xs font-semibold text-ink-800 shadow-glass-soft transition-all hover:border-sky-200 hover:bg-white"
                 >
-                  <WandSparkles className="size-4 text-sky-700" aria-hidden />
                   {scenario.label}
                 </button>
               ))}
             </div>
           </div>
-
-          <PrivacyNotice title="Privacy & redaction">
-            Aadhaar, PAN, OTPs, full card numbers, and PINs are replaced
-            before persistence. We never read full screenshots — only the
-            text you paste.
-          </PrivacyNotice>
-
-          {lastError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Something went wrong</AlertTitle>
-              <AlertDescription>{lastError}</AlertDescription>
-            </Alert>
-          ) : null}
         </div>
-
-        {/* ======== RIGHT: Sidebar ======== */}
-        {hasMessages && (
-          <aside className="flex min-w-0 flex-col gap-4">
-            {/* Official helplines */}
-            <GlassPanel variant="muted" className="p-5">
-              <h3 className="text-sm font-semibold text-ink-900">
-                Official pathways
-              </h3>
-              <p className="text-xs text-ink-500">
-                Reference guidance only · not a live integration
-              </p>
-              <ul className="mt-3 grid grid-cols-3 gap-2">
-                {OFFICIAL_HELPLINES.map((h) => (
-                  <li key={h.number}>
-                    <a
-                      href={`tel:${h.number}`}
-                      className="flex h-full flex-col gap-0.5 rounded-2xl border border-sky-100 bg-white/80 p-2.5 transition-colors hover:border-sky-300 hover:bg-sky-50"
-                    >
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-sky-700">
-                        {h.label}
-                      </span>
-                      <span className="font-mono text-lg font-semibold tabular-nums text-ink-900">
-                        {h.number}
-                      </span>
-                      <span className="hidden text-[10px] text-ink-500 sm:inline">
-                        {h.detail}
-                      </span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </GlassPanel>
-
-            {/* Routing result */}
-            {caseSnapshot && (
-              <RoutingResultCard
-                snapshot={caseSnapshot}
-                pipeline={pipeline}
-                onConfirm={confirmFacts}
-                confirming={confirming}
-                canConfirm={canConfirm}
-              />
+      ) : (
+        /* ============================================================ */
+        /* CHAT MODE — minimal, serene, clean                           */
+        /* ============================================================ */
+        <div className="relative flex min-h-dvh w-full max-w-5xl flex-col animate-fade-in">
+          {/* Messages area — scrollable, grows from bottom */}
+          <div className="flex flex-1 flex-col overflow-y-auto px-4 pb-28 pt-6 md:px-8">
+            {/* Spacer pushes messages to bottom when there's room */}
+            <div className="flex-1" />
+            {chatMessages.map((msg, i) => (
+              <ChatBubble key={msg.id || i} msg={msg} />
+            ))}
+            {submitting && (
+              <div className="flex items-start gap-3 pt-4">
+                <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sky-400 shadow-glass-soft">
+                  <Shield className="size-3.5" />
+                </span>
+                <div className="rounded-xl rounded-bl-md bg-white/85 px-5 py-4 shadow-glass-soft">
+                  <p className="text-sm text-ink-500">Thinking…</p>
+                </div>
+              </div>
             )}
-          </aside>
-        )}
-      </div>
+            {canConfirm && !submitting && (
+              <div className="flex justify-start gap-3 mt-1">
+                <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sky-400 shadow-glass-soft">
+                  <Shield className="size-3.5" />
+                </span>
+                <button
+                  type="button"
+                  onClick={confirmFacts}
+                  disabled={confirming}
+                  className="rounded-xl rounded-bl-md bg-sky-500 px-6 py-3 text-sm font-semibold text-white shadow-glass-soft transition-all duration-200 hover:bg-sky-600 disabled:opacity-50"
+                >
+                  {confirming ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="size-3.5 animate-spin" />
+                      Creating case…
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <CheckCircle2 className="size-4" />
+                      Confirm — this looks right
+                    </span>
+                  )}
+                </button>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Floating pill input at bottom */}
+          <div className="fixed inset-x-0 bottom-0 z-20 bg-gradient-to-t from-[#fafbfc] via-[#fafbfc]/85 to-transparent pb-5 pt-8 md:pb-6">
+            <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 px-4 md:px-6">
+              <div className="flex w-full items-center rounded-full border border-white/80 bg-white/95 py-1.5 pl-3 pr-1.5 shadow-glass backdrop-blur-xl transition-all focus-within:bg-white focus-within:ring-2 focus-within:ring-sky-200/50">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white/80 text-ink-400 transition-colors hover:bg-sky-50 hover:text-sky-500"
+                  aria-label="Add image"
+                >
+                  {imagePreview ? (
+                    <img src={imagePreview} alt="Preview" className="size-5 rounded-full object-cover" />
+                  ) : (
+                    <Plus className="size-4" />
+                  )}
+                </button>
+                <input
+                  type="text"
+                  placeholder="Type your response…"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="flex-1 border-0 bg-transparent px-2 py-3 text-base text-ink-900 outline-none placeholder:text-ink-500/50 focus:outline-none focus:ring-0"
+                />
+                <button
+                  type="button"
+                  onClick={() => sendMessage()}
+                  disabled={submitting || !input.trim()}
+                  className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-sky-500 shadow-glass-soft transition-all duration-200 hover:bg-sky-600 disabled:opacity-40"
+                  aria-label="Send message"
+                >
+                  {submitting ? (
+                    <Loader2 className="size-4 animate-spin text-white" />
+                  ) : (
+                    <Send className="size-4 text-white" />
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Hidden file input for image upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleImageSelect}
+        className="hidden"
+        aria-label="Upload image"
+      />
     </div>
   );
 }
@@ -766,37 +678,51 @@ function withCaseId(target: string, caseId: string | null): string {
 function ChatBubble({ msg }: { msg: ChatMessage }) {
   const isUser = msg.role === "user";
   const isEvidence = msg.message_kind === "evidence";
+  const imagePreview = msg.metadata?.image_preview as string | undefined;
+  const hasContent = msg.content_redacted && msg.content_redacted !== "Image attached";
 
   return (
     <div
       className={cn(
-        "flex gap-3",
+        "flex gap-3 mb-3",
         isUser ? "justify-end" : "justify-start",
       )}
     >
       {!isUser && (
-        <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-700 shadow-glass-soft">
+        <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sky-400 shadow-glass-soft">
           <Shield className="size-3.5" />
         </span>
       )}
 
       <div
         className={cn(
-          "max-w-[82%] rounded-2xl px-5 py-3.5 text-sm leading-relaxed",
+          "max-w-[82%] rounded-xl px-5 py-3.5 text-sm leading-relaxed",
           isUser
-            ? "rounded-br-md bg-sky-600 text-white shadow-glass-soft"
+            ? "rounded-br-md bg-sky-300 text-sky-950 shadow-glass-soft"
             : isEvidence
-              ? "rounded-bl-md border border-sky-200 bg-sky-50/80 text-ink-800 shadow-glass-soft"
+              ? "rounded-bl-md border border-sky-100 bg-blue-50/60 text-ink-800 shadow-glass-soft"
               : "rounded-bl-md bg-white/85 text-ink-900 shadow-glass-soft",
         )}
       >
         {isEvidence && (
-          <span className="mb-1 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-sky-600">
+          <span className="mb-1 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-sky-400">
             <MessageSquare className="size-3" />
             Evidence
           </span>
         )}
-        <p className="whitespace-pre-wrap">{msg.content_redacted}</p>
+        {imagePreview && (
+          <img
+            src={imagePreview}
+            alt="Uploaded"
+            className="mb-2 w-full max-w-[240px] rounded-lg object-cover shadow-sm"
+          />
+        )}
+        {hasContent && (
+          <p className="whitespace-pre-wrap">{msg.content_redacted}</p>
+        )}
+        {!hasContent && !imagePreview && (
+          <p className="whitespace-pre-wrap">{msg.content_redacted}</p>
+        )}
       </div>
     </div>
   );
@@ -809,7 +735,7 @@ function ChatBubble({ msg }: { msg: ChatMessage }) {
 function CompactProgress({ currentStep }: { currentStep: number }) {
   return (
     <div className="flex w-full max-w-[300px] flex-col gap-3 lg:justify-self-end">
-      <div className="inline-flex h-9 w-fit items-center rounded-full border border-sky-200 bg-white/55 px-4 text-sm font-semibold text-sky-700 shadow-glass-soft">
+      <div className="inline-flex h-9 w-fit items-center rounded-full border border-sky-100 bg-white/55 px-4 text-sm font-semibold text-sky-400 shadow-glass-soft">
         Step {currentStep} of 5
       </div>
       <div className="flex items-center gap-4">
@@ -819,8 +745,8 @@ function CompactProgress({ currentStep }: { currentStep: number }) {
             className={cn(
               "h-2 flex-1 rounded-full transition-colors",
               index + 1 <= currentStep
-                ? "bg-sky-600"
-                : "bg-sky-200/80",
+                ? "bg-sky-300"
+                : "bg-sky-100/80",
             )}
             aria-hidden
           />
@@ -910,7 +836,7 @@ function RoutingResultCard({
       {/* Fraud type detection */}
       {snapshot.fraud_type && snapshot.fraud_type !== "unknown" && (
         <div className="flex items-center gap-2">
-          <div className="inline-flex size-6 items-center justify-center rounded-full bg-sky-100 text-sky-700">
+          <div className="inline-flex size-6 items-center justify-center rounded-full bg-sky-50 text-sky-400">
             <ShieldCheck className="size-3.5" />
           </div>
           <span className="text-sm font-medium text-ink-900">

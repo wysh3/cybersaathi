@@ -99,11 +99,14 @@ def reduce_case_state(
             update={"pincode": patch.location.pincode}
         )
 
-    # Add evidence texts
+    # Add evidence texts from LLM patch and from the current turn
     for text in patch.evidence_texts_to_add:
         redacted = redact_text(text)
         if redacted and redacted not in snapshot.evidence_texts:
             snapshot.evidence_texts.append(redacted)
+    # Add the current turn's evidence (including vision-extracted text)
+    if evidence_text and evidence_text not in snapshot.evidence_texts:
+        snapshot.evidence_texts.append(redact_text(evidence_text))
 
     # --- Deterministic authority wins ---
     # Amount from deterministic extraction
@@ -195,7 +198,7 @@ def _derive_missing(snapshot: CaseStateSnapshot) -> list[str]:
         missing.append("fraud_type")
     if not snapshot.payment_method or snapshot.payment_method in ("unknown", "auto"):
         missing.append("payment_method")
-    if snapshot.amount is None:
+    if snapshot.amount is None and snapshot.facts.amount is None:
         missing.append("amount")
     if not snapshot.incident_at:
         missing.append("incident_at")

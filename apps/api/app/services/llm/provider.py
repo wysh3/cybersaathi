@@ -36,6 +36,7 @@ providers:
     api_key_env: NVIDIA_API_KEY
     models:
       intake: nvidia/nemotron-3-nano-30b-a3b
+      vision: nvidia/nemotron-nano-12b-v2-vl
 """
 
 
@@ -62,6 +63,11 @@ def is_llm_enabled() -> bool:
 def get_intake_model() -> str:
     """Return the model name for intake chat."""
     return os.environ.get("LLM_MODEL_INTAKE", _provider_config()["models"]["intake"])
+
+
+def get_vision_model() -> str:
+    """Return the model name for vision/image analysis."""
+    return os.environ.get("LLM_MODEL_VISION", _provider_config()["models"]["vision"])
 
 
 def get_timeout() -> float:
@@ -193,3 +199,50 @@ def extract_usage(response: dict[str, Any]) -> dict[str, Any]:
         "completion_tokens": usage.get("completion_tokens", 0),
         "total_tokens": usage.get("total_tokens", 0),
     }
+
+
+# ---------------------------------------------------------------------------
+# Vision completion
+# ---------------------------------------------------------------------------
+
+
+_VISION_EXTRACTION_PROMPT = """Extract ALL readable text from this payment screenshot or SMS alert.
+Return ONLY the extracted text — no commentary, no analysis, no markdown.
+Focus on: amount, UPI ID, UTR/transaction reference, bank name, date/time, account numbers (masked or partial).
+Output the text exactly as it appears in the image, preserving the order."""
+
+
+async def chat_completion_vision(
+    image_base64: str,
+    *,
+    model: Optional[str] = None,
+    prompt: str | None = None,
+    temperature: float = 0.1,
+    max_tokens: int = 800,
+) -> dict[str, Any]:
+    """Send an image to the vision model and get extracted text.
+
+    Returns the raw API response dict. The content will be the extracted text.
+    """
+    client = get_llm_client()
+    model_name = model or get_vision_model()
+
+    user_content: list[dict[str, Any]] = [
+        {"type": "text", "text": prompt or _VISION_EXTRACTION_PROMPT},
+        {
+            "type": "image_url",
+            "image_url": {"url": f"data:image/png;base64,{image_base64}"},
+        },
+    ]
+
+    messages = [{"role": "user", "content": user_content}]
+
+    kwargs: dict[str, Any] = {
+        "model": model_name,
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+    }
+
+    response = await client.chat.completions.create(**kwargs)
+    return response.model_dump()

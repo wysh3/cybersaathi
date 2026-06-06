@@ -35,7 +35,6 @@ import type {
   SimilarityResult,
 } from "@/lib/types";
 
-import { DocumentActionCard, DOCUMENT_TABS } from "./DocumentActionCard";
 import { DocumentHeader } from "./DocumentHeader";
 import { DocumentWorkspace } from "./DocumentWorkspace";
 import { EmptyCaseState } from "./EmptyCaseState";
@@ -203,30 +202,8 @@ export function DocumentPackage() {
         onPrint={handlePrint}
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {DOCUMENT_TABS.map((tab) => {
-          const isReady = documents.some((d) => d.kind === tab.key);
-          return (
-            <DocumentActionCard
-              key={tab.key}
-              label={tab.label}
-              description={tab.description}
-              icon={tab.icon}
-              isReady={isReady}
-              isActive={activeDocKind === tab.key}
-              onClick={() => {
-                setActiveDocKind(tab.key);
-                document
-                  .getElementById("document-workspace")
-                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
-            />
-          );
-        })}
-      </div>
-
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <div id="document-workspace">
+        <div>
           <DocumentWorkspace
             documents={documents}
           />
@@ -239,9 +216,9 @@ export function DocumentPackage() {
         </aside>
       </div>
 
-      <div className="rounded-3xl border border-white/60 bg-white/45 p-8 shadow-glass-soft backdrop-blur-xl flex flex-col md:flex-row items-center justify-between gap-6 mt-8">
+      <div className="rounded-xl border border-white/60 bg-white/45 p-8 shadow-glass-soft backdrop-blur-xl flex flex-col md:flex-row items-center justify-between gap-6 mt-8">
         <div className="flex items-start gap-4">
-          <div className="mt-1 flex size-12 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-sky-700 shadow-glass-soft">
+          <div className="mt-1 flex size-12 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-700 shadow-glass-soft">
             <ClipboardCheck className="size-6" />
           </div>
           <div className="flex flex-col gap-1">

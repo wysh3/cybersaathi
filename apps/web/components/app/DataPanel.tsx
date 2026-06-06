@@ -33,7 +33,7 @@ export function DataPanel({
   contentClassName?: string;
 }) {
   return (
-    <Card className={cn("h-full", className)}>
+    <Card className={cn("h-full overflow-hidden", className)}>
       <CardHeader>
         <div className="flex flex-col gap-0.5">
           {Icon ? (

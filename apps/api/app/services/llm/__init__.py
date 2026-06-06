@@ -3,9 +3,11 @@
 from .provider import (
     chat_completion,
     chat_completion_json,
+    chat_completion_vision,
     extract_content,
     extract_usage,
     get_intake_model,
+    get_vision_model,
     get_llm_client,
     get_max_retries,
     get_timeout,
@@ -16,9 +18,11 @@ from .provider import (
 __all__ = [
     "chat_completion",
     "chat_completion_json",
+    "chat_completion_vision",
     "extract_content",
     "extract_usage",
     "get_intake_model",
+    "get_vision_model",
     "get_llm_client",
     "get_max_retries",
     "get_timeout",
