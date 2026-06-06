@@ -83,6 +83,19 @@ Set a real admin JWT secret for deployed API instances:
 ADMIN_JWT_SECRET=change-this-to-a-long-random-secret
 ```
 
+Allow the deployed web app to call the API:
+
+```bash
+CORS_ORIGINS=https://your-vercel-app.vercel.app
+```
+
+For the police admin cookie to work across Vercel and Render domains:
+
+```bash
+ADMIN_COOKIE_SECURE=true
+ADMIN_COOKIE_SAMESITE=none
+```
+
 Use PostgreSQL in normal runtime. `DATABASE_ENABLED=false` is only for explicit
 in-memory fallback demos or isolated tests.
 

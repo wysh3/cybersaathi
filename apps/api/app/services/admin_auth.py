@@ -26,6 +26,8 @@ JWT_SECRET = os.environ.get("ADMIN_JWT_SECRET", "cybersaathi-admin-secret-change
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_HOURS = 8  # Shift-length aligned
 COOKIE_NAME = "cs_admin_token"
+COOKIE_SECURE = os.environ.get("ADMIN_COOKIE_SECURE", "false").lower() in ("1", "true", "yes")
+COOKIE_SAMESITE = os.environ.get("ADMIN_COOKIE_SAMESITE", "lax").lower()
 
 
 # --- Password helpers ---
@@ -107,8 +109,8 @@ def set_auth_cookie(response: Response, token: str) -> None:
         key=COOKIE_NAME,
         value=token,
         httponly=True,
-        secure=False,  # Set True in production with HTTPS
-        samesite="lax",
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,  # Use "none" with secure=true for cross-site deployed admin UI.
         max_age=JWT_EXPIRY_HOURS * 3600,
         path="/",
     )
@@ -120,8 +122,8 @@ def clear_auth_cookie(response: Response) -> None:
         key=COOKIE_NAME,
         path="/",
         httponly=True,
-        secure=False,
-        samesite="lax",
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,
     )
 
 

@@ -8,6 +8,7 @@ or:
 
 from __future__ import annotations
 
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -35,6 +36,18 @@ DEFAULT_SEED_DIR = (
     # apps/api/app/main.py -> apps/api/app -> apps/api -> apps -> <monorepo root>
     Path(__file__).resolve().parents[3] / "seed_data"
 )
+
+
+def _cors_origins() -> list[str]:
+    configured = os.environ.get("CORS_ORIGINS")
+    if configured:
+        return [origin.strip() for origin in configured.split(",") if origin.strip()]
+    return [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+    ]
 
 
 @asynccontextmanager
@@ -65,12 +78,7 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "http://localhost:3000",
-            "http://127.0.0.1:3000",
-            "http://localhost:3001",
-            "http://127.0.0.1:3001",
-        ],
+        allow_origins=_cors_origins(),
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
