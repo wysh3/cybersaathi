@@ -1,0 +1,15 @@
+{
+  "name": "cybersaathi-whatsapp-gateway",
+  "version": "0.1.0",
+  "description": "Baileys-based WhatsApp gateway for CyberSaathi hackathon demo",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^7.0.0-rc.13",
+    "pino": "^9.0.0",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
