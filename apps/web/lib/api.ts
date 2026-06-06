@@ -354,6 +354,13 @@ export const api = {
     const tail = qs.toString();
     window.open(`${API_BASE}/admin/export${tail ? `?${tail}` : ""}`, "_blank");
   },
+
+  // ---- TTS (Gemini 2.5 Flash) ----
+  tts: (text: string) =>
+    request<{ audio_base64: string; mime_type: string; text: string }>(`/tts/speak`, {
+      method: "POST",
+      body: JSON.stringify({ text }),
+    }),
 };
 
 export { ApiError };

@@ -92,7 +92,7 @@ Use the exact commands from `references/git-commands.md`.
 Require the relevant checks. For full app changes, run:
 
 ```bash
-cd apps/api && PYTHONPATH=apps/api:.. uv run pytest
+cd apps/api && PYTHONPATH=apps/api:../../packages:.. uv run pytest
 cd ../web && npm run typecheck && npm run lint && npm run build
 npx tsx tests/browser-smoke.ts
 npx tsx tests/e2e-priya.ts

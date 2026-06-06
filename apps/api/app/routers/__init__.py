@@ -17,6 +17,7 @@ from .intake_chat import router as intake_chat_router
 from .map import router as map_router
 from .post_report import router as post_report_router
 from .admin import router as admin_router
+from .tts import router as tts_router
 
 __all__ = [
     "intake_router",
@@ -31,4 +32,5 @@ __all__ = [
     "map_router",
     "post_report_router",
     "admin_router",
+    "tts_router",
 ]

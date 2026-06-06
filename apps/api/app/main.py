@@ -28,6 +28,7 @@ from app.routers import (
     similarity_router,
     post_report_router,
     admin_router,
+    tts_router,
 )
 from app.seed import write_seed_files
 
@@ -100,6 +101,7 @@ def create_app() -> FastAPI:
     app.include_router(map_router)
     app.include_router(post_report_router)
     app.include_router(admin_router)
+    app.include_router(tts_router)
 
     @app.get("/healthz", tags=["meta"])
     async def healthz() -> dict[str, str]:

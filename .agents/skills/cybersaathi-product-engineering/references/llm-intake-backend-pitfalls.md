@@ -2,6 +2,12 @@
 
 Covers `apps/api/app/services/llm_intake/` and `apps/api/app/routers/intake_chat.py`.
 
+**Provider setup and model switching:** see `references/deepseek-v4-provider-setup.md`.
+The intake model is configured via `LLM_PROVIDER` + `LLM_MODEL_INTAKE` in `.env`.
+Default is DeepSeek V4 Flash; NVIDIA NIM (`nvidia/nemotron-3-nano-30b-a3b`) is the
+alternative. The architecture diagram below shows the generic flow — the actual model
+is determined by `provider.py` at runtime.
+
 ## Architecture
 
 ```
@@ -12,7 +18,7 @@ User message → chat_turn() [router]
       → route_intake()                # Deterministic routing
       → _enrich_snapshot_with_det_facts()  # Merge det facts into snapshot BEFORE context
       → build_context_packet()        # Build LLM prompt context
-      → chat_completion_json()        # Call NVIDIA NIM
+      → chat_completion_json()        # Call configured provider (DeepSeek or NVIDIA NIM)
       → reduce_case_state()           # Merge LLM patch + deterministic → final snapshot
   → _build_deterministic_message()    # Fallback message if LLM fails
   → Store + return to frontend
@@ -54,7 +60,7 @@ else:
 ### 2. UTR redaction (FIXED)
 **Location:** `redaction.py`
 
-UTR numbers like `408722195166` (12 digits) matched the `\d{9,15}` account_long
+UTR numbers like `408722195166` (12 digits) matched the `\\d{9,15}` account_long
 redaction pattern and were replaced with `[REDACTED:ACCOUNT_LONG]`. UTRs are
 transaction reference numbers — NOT account numbers — and are critical for
 fraud tracking.
@@ -92,18 +98,18 @@ The LLM occasionally returns two questions in one message despite the prompt
 saying "EXACTLY ONE." This overwhelms panicking users.
 
 **Fix:** Post-processing guardrail. If the LLM's `assistant_message` has >1
-question mark, split on `\n\n` paragraph boundaries and keep only up through the
+question mark, split on `\\n\\n` paragraph boundaries and keep only up through the
 first paragraph containing a question mark.
 
 ```python
 if assistant_text.count("?") > 1:
-    paragraphs = assistant_text.split("\n\n")
+    paragraphs = assistant_text.split("\\n\\n")
     kept = []
     for para in paragraphs:
         kept.append(para)
         if "?" in para:
             break
-    assistant_text = "\n\n".join(kept)
+    assistant_text = "\\n\\n".join(kept)
 ```
 
 ### 5. Duplicate `_derive_missing` with inconsistent logic (FIXED)
@@ -164,10 +170,11 @@ Image (base64) → chat_completion_vision() [nemotron-nano-12b-v2-vl]
 
 ### Vision model config
 
-`nvidia/nemotron-nano-12b-v2-vl` in `provider.py`:
+Vision always uses NVIDIA NIM (`nvidia/nemotron-nano-12b-v2-vl`) regardless
+of the active intake provider, since DeepSeek chat models don't support
+vision/image inputs. The vision model is set in `provider.py`:
 ```python
 models:
-  intake: nvidia/nemotron-3-nano-30b-a3b
   vision: nvidia/nemotron-nano-12b-v2-vl
 ```
 
@@ -202,7 +209,7 @@ UTR number
 
 The original UTR regex (`_UTR_RE` in extraction.py) only matched same-line
 patterns like `UTR 408722195166`. It missed the multi-line output. Fixed by
-allowing `[\w\s:#=-]{0,30}[\n\r]\s*` between the UTR label and the digits.
+allowing `[\\w\\s:#=-]{0,30}[\\n\\r]\\s*` between the UTR label and the digits.
 
 **Same fix applied to both `extraction.py:_UTR_RE` and
 `redaction.py:_UTR_PRESERVE_RE`.** Without this, the UTR is:

@@ -28,6 +28,8 @@ import {
   Send,
   Shield,
   ShieldCheck,
+  Volume2,
+  VolumeX,
   WandSparkles,
   X,
 } from "lucide-react";
@@ -680,6 +682,43 @@ function ChatBubble({ msg }: { msg: ChatMessage }) {
   const isEvidence = msg.message_kind === "evidence";
   const imagePreview = msg.metadata?.image_preview as string | undefined;
   const hasContent = msg.content_redacted && msg.content_redacted !== "Image attached";
+  const [speaking, setSpeaking] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  async function handleSpeak() {
+    if (!hasContent || !msg.content_redacted) return;
+
+    // Stop if already playing
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+      setSpeaking(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await api.tts(msg.content_redacted);
+      const audio = new Audio(`data:${response.mime_type};base64,${response.audio_base64}`);
+      audio.onended = () => {
+        audioRef.current = null;
+        setSpeaking(false);
+      };
+      audio.onerror = () => {
+        audioRef.current = null;
+        setSpeaking(false);
+      };
+      audioRef.current = audio;
+      await audio.play();
+      setSpeaking(true);
+    } catch (err) {
+      console.error("TTS failed:", err);
+      toast.error("Could not read message aloud");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div
@@ -722,6 +761,31 @@ function ChatBubble({ msg }: { msg: ChatMessage }) {
         )}
         {!hasContent && !imagePreview && (
           <p className="whitespace-pre-wrap">{msg.content_redacted}</p>
+        )}
+        {/* TTS speak button — assistant messages only */}
+        {!isUser && hasContent && (
+          <button
+            type="button"
+            onClick={handleSpeak}
+            disabled={loading}
+            className={cn(
+              "mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors",
+              speaking
+                ? "bg-sky-500 text-white"
+                : "bg-sky-50 text-sky-500 hover:bg-sky-100",
+              loading && "opacity-50 cursor-wait",
+            )}
+            aria-label={speaking ? "Stop speaking" : "Read aloud"}
+          >
+            {loading ? (
+              <Loader2 className="size-3 animate-spin" />
+            ) : speaking ? (
+              <VolumeX className="size-3" />
+            ) : (
+              <Volume2 className="size-3" />
+            )}
+            {loading ? "Loading…" : speaking ? "Stop" : "Listen"}
+          </button>
         )}
       </div>
     </div>

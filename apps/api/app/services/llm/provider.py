@@ -1,13 +1,18 @@
-"""LLM provider abstraction for NVIDIA NIM (OpenAI-compatible).
+"""LLM provider abstraction for multiple backends (OpenAI-compatible).
 
-Uses openai.AsyncOpenAI pointed at https://integrate.api.nvidia.com/v1.
-Handles NIM-specific quirks: enable_thinking=False, reasoning_content
-removal, and redacted context only.
+Supported providers:
+  - nvidia_nim: NVIDIA NIM (https://integrate.api.nvidia.com/v1)
+  - deepseek:   DeepSeek API (https://api.deepseek.com)
+
+Uses openai.AsyncOpenAI for all providers. Handles provider-specific
+quirks: NIM enable_thinking=False, reasoning_content removal.
 
 Configured via env vars:
-  LLM_PROVIDER=nvidia_nim
-  NVIDIA_API_KEY=...
-  LLM_MODEL_INTAKE=nvidia/nemotron-3-nano-30b-a3b
+  LLM_PROVIDER=deepseek
+  DEEPSEEK_API_KEY=...
+  NVIDIA_API_KEY=...               (only needed for vision)
+  LLM_MODEL_INTAKE=deepseek-v4-flash
+  LLM_MODEL_VISION=nvidia/nemotron-nano-12b-v2-vl
   LLM_ENABLED=true
   LLM_TIMEOUT_SECONDS=25
   LLM_MAX_RETRIES=2
@@ -30,13 +35,24 @@ from openai import AsyncOpenAI
 
 _DEFAULT_CONFIG = """
 providers:
-  default: nvidia_nim
+  default: deepseek
   nvidia_nim:
     base_url: https://integrate.api.nvidia.com/v1
     api_key_env: NVIDIA_API_KEY
     models:
       intake: nvidia/nemotron-3-nano-30b-a3b
       vision: nvidia/nemotron-nano-12b-v2-vl
+  deepseek:
+    base_url: https://api.deepseek.com
+    api_key_env: DEEPSEEK_API_KEY
+    models:
+      intake: deepseek-v4-flash
+      # DeepSeek chat models don't support vision — vision falls back to nvidia_nim
+  google:
+    base_url: https://generativelanguage.googleapis.com/v1beta
+    api_key_env: GOOGLE_API_KEY
+    models:
+      tts: gemini-3.1-flash-tts-preview
 """
 
 
@@ -49,10 +65,26 @@ def _load_config() -> dict[str, Any]:
     return yaml.safe_load(_DEFAULT_CONFIG)
 
 
-def _provider_config() -> dict[str, Any]:
-    cfg = _load_config()
-    provider_name = os.environ.get("LLM_PROVIDER", cfg.get("default", "nvidia_nim"))
-    return cfg.get("providers", {}).get(provider_name, cfg["providers"]["nvidia_nim"])
+def _config() -> dict[str, Any]:
+    return _load_config()
+
+
+def _provider_name() -> str:
+    """Return the active provider name (e.g. 'deepseek', 'nvidia_nim')."""
+    return os.environ.get("LLM_PROVIDER") or str(_config().get("default", "deepseek"))
+
+
+def _provider_config(name: str | None = None) -> dict[str, Any]:
+    """Return config dict for a specific provider, or the active one."""
+    cfg = _config()
+    provider_name = name or _provider_name()
+    try:
+        return cfg["providers"][provider_name]
+    except KeyError:
+        raise RuntimeError(
+            f"Unknown LLM provider '{provider_name}'. "
+            f"Known providers: {list(cfg.get('providers', {}).keys())}"
+        )
 
 
 def is_llm_enabled() -> bool:
@@ -66,8 +98,18 @@ def get_intake_model() -> str:
 
 
 def get_vision_model() -> str:
-    """Return the model name for vision/image analysis."""
-    return os.environ.get("LLM_MODEL_VISION", _provider_config()["models"]["vision"])
+    """Return the model name for vision/image analysis.
+    
+    Falls back to nvidia_nim provider config since DeepSeek doesn't support vision.
+    """
+    env_model = os.environ.get("LLM_MODEL_VISION")
+    if env_model:
+        return env_model
+    # Try active provider first, fall back to nvidia_nim
+    try:
+        return _provider_config()["models"]["vision"]
+    except KeyError:
+        return _provider_config("nvidia_nim")["models"]["vision"]
 
 
 def get_timeout() -> float:
@@ -79,38 +121,57 @@ def get_max_retries() -> int:
 
 
 # ---------------------------------------------------------------------------
-# Client
+# Clients (singletons)
 # ---------------------------------------------------------------------------
 
 _client: Optional[AsyncOpenAI] = None
+_vision_client: Optional[AsyncOpenAI] = None
+
+
+def _build_client(provider_name: str) -> AsyncOpenAI:
+    """Build an AsyncOpenAI client for a given provider."""
+    provider_cfg = _provider_config(provider_name)
+    api_key = os.environ.get(provider_cfg["api_key_env"], "not-set")
+    return AsyncOpenAI(
+        base_url=provider_cfg["base_url"],
+        api_key=api_key,
+        timeout=get_timeout(),
+        max_retries=get_max_retries(),
+    )
 
 
 def get_llm_client() -> AsyncOpenAI:
-    """Return the singleton AsyncOpenAI client for NIM."""
+    """Return the singleton AsyncOpenAI client for the active chat provider."""
     global _client
     if _client is None:
-        provider_cfg = _provider_config()
-        api_key = os.environ.get(provider_cfg["api_key_env"], "not-set")
-        _client = AsyncOpenAI(
-            base_url=provider_cfg["base_url"],
-            api_key=api_key,
-            timeout=get_timeout(),
-            max_retries=get_max_retries(),
-        )
+        _client = _build_client(_provider_name())
     return _client
 
 
+def _get_vision_client() -> AsyncOpenAI:
+    """Return a singleton AsyncOpenAI client for vision (always NVIDIA NIM).
+    
+    DeepSeek chat models don't support vision/image inputs, so vision
+    requests always route through NVIDIA NIM regardless of the active
+    chat provider.
+    """
+    global _vision_client
+    if _vision_client is None:
+        _vision_client = _build_client("nvidia_nim")
+    return _vision_client
+
+
 # ---------------------------------------------------------------------------
-# NIM-specific message cleanup
+# Reasoning content cleanup
 # ---------------------------------------------------------------------------
 
 
 def strip_reasoning_content(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Remove reasoning_content from assistant messages before re-sending to NIM.
+    """Remove reasoning_content from assistant messages before re-sending.
 
-    NIM models may include reasoning_content in responses. Sending it back
-    causes errors. We strip it and fall back to reasoning_content only if
-    message.content is empty.
+    Some models (NIM, DeepSeek-R1) include reasoning_content in responses.
+    Sending it back causes errors. We strip it and fall back to
+    reasoning_content only if message.content is empty.
     """
     cleaned = []
     for msg in messages:
@@ -128,6 +189,20 @@ def strip_reasoning_content(messages: list[dict[str, Any]]) -> list[dict[str, An
 # ---------------------------------------------------------------------------
 
 
+def _nim_extra_body() -> dict[str, Any]:
+    """NIM-specific extra_body — disables thinking tokens."""
+    return {"chat_template_kwargs": {"enable_thinking": False}}
+
+
+def _deepseek_extra_body() -> dict[str, Any]:
+    """DeepSeek V4 extra_body — disables thinking/chain-of-thought.
+
+    DeepSeek V4 models (flash, pro) default to thinking=enabled.
+    We explicitly disable it for CyberSaathi's non-reasoning intake flow.
+    """
+    return {"thinking": {"type": "disabled"}}
+
+
 async def chat_completion(
     messages: list[dict[str, Any]],
     *,
@@ -136,12 +211,13 @@ async def chat_completion(
     max_tokens: int = 1200,
     response_format: Optional[dict[str, Any]] = None,
 ) -> dict[str, Any]:
-    """Send a chat completion request to the NIM endpoint.
+    """Send a chat completion request to the active provider.
 
     Returns the raw API response dict. Raises on error.
     """
     client = get_llm_client()
     model_name = model or get_intake_model()
+    provider = _provider_name()
 
     cleaned_messages = strip_reasoning_content(messages)
 
@@ -150,8 +226,15 @@ async def chat_completion(
         "messages": cleaned_messages,
         "temperature": temperature,
         "max_tokens": max_tokens,
-        "extra_body": {"chat_template_kwargs": {"enable_thinking": False}},
     }
+
+    # NIM-specific: disable thinking tokens
+    if provider == "nvidia_nim":
+        kwargs["extra_body"] = _nim_extra_body()
+
+    # DeepSeek V4: disable thinking (default is enabled)
+    if provider == "deepseek":
+        kwargs["extra_body"] = _deepseek_extra_body()
 
     if response_format:
         kwargs["response_format"] = response_format
@@ -202,7 +285,7 @@ def extract_usage(response: dict[str, Any]) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Vision completion
+# Vision completion (always NVIDIA NIM)
 # ---------------------------------------------------------------------------
 
 
@@ -222,9 +305,12 @@ async def chat_completion_vision(
 ) -> dict[str, Any]:
     """Send an image to the vision model and get extracted text.
 
+    Always uses NVIDIA NIM for vision since DeepSeek chat models
+    don't support image inputs.
+
     Returns the raw API response dict. The content will be the extracted text.
     """
-    client = get_llm_client()
+    client = _get_vision_client()
     model_name = model or get_vision_model()
 
     user_content: list[dict[str, Any]] = [

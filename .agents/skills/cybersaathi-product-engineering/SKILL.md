@@ -309,6 +309,30 @@ pitfalls discovered in production:
   the state name parameter, the calling component must NOT pre-encode. Pass
   the raw state name.
 
+### External API integration — read the docs, do not assume
+
+When the user gives you a model name, docs URL, or spec snippet for a new
+external API (TTS, vision, LLM, any third-party service), **navigate to the
+live documentation and read the curl/request example** before writing a
+single line of backend code. Do NOT assume:
+
+- Auth format (?key= vs x-goog-api-key header vs Bearer)
+- Endpoint URL structure
+- Request body shape or required fields
+- Response format (WAV vs PCM vs JSON-embedded)
+- Model name (specs and docs can be outdated relative to live API)
+
+**Concrete example — Gemini TTS:** The user provided `gemini-2.5-flash-preview-tts`
+model card. Assuming `?key=` auth, OpenAI-compatible shape, and WAV output led
+to a 403 → 400 → PCM-without-header debugging spiral. The docs curl example
+showed: `gemini-3.1-flash-tts-preview`, `x-goog-api-key` header,
+`responseModalities: ["AUDIO"]`, PCM output at 24 kHz. Reading first would
+have been one-shot correct.
+
+**Rule:** browser-navigate to the docs URL, extract the curl/request example,
+then code against that. When the user says "check the docs" or provides a
+URL, do exactly that — don't guess.
+
 ### General UI correction pattern
 
 When the user says something like "fix the radius" or "change the
@@ -322,11 +346,20 @@ over-correcting:
 **Document page layout and DataPanel overflow rules:** see
 `references/document-page-and-datapanel-rules.md`.
 
+**TTS integration (Listen button on chat bubbles):** see
+`references/tts-integration.md`.
+
+**API server development commands (start, restart, test, verify):** see
+`references/api-dev-commands.md`.
+
 ### Chat intake: progressive hero → minimal chat
 
 The landing page chat follows a progressive reveal pattern with a typing
 animation. **For backend LLM pipeline architecture, pitfalls, and testing
 checklist, see `references/llm-intake-backend-pitfalls.md`.**
+**For LLM provider configuration (DeepSeek, NVIDIA NIM), model switching,
+and provider-specific reasoning/thinking quirks, see
+`references/deepseek-v4-provider-setup.md`.**
 **For WhatsApp transport layer (Baileys gateway for demos, official API for
 production), see `references/whatsapp-gateway.md`.**
 
