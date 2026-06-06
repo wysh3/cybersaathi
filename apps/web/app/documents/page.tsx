@@ -1,7 +1,7 @@
 import { DocumentPackage } from "@/components/documents/DocumentPackage";
 
 export const metadata = {
-  title: "Complaint package — CyberSaathi",
+  title: "Documents — CyberSaathi",
   description:
     "Editable NCRP complaint draft, bank dispute email, evidence timeline, and recovery checklist.",
 };

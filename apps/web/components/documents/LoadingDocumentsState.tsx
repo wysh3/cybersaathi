@@ -15,7 +15,6 @@ export function LoadingDocumentsState() {
       data-print="root"
     >
       <PageHeader
-        eyebrow="Complaint package"
         title="Generating documents…"
         description="We're extracting facts and building the editable drafts."
       />

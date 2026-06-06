@@ -1,140 +1,104 @@
 # CyberSaathi
 
-CyberSaathi is a cybercrime-first AI Emergency Government Navigator for
-Hack4SOC 3.0, Governance PS1. Team AETOS: Akshay Kumar, Nandan Kumar C,
-Vishruth M R.
+![CyberSaathi landing page](landing_page.png)
 
-The app turns a victim's first description into the next correct action:
-Golden Hour 1930 guidance, post-golden-hour complaint packages, seeded scam
-similarity, India heatmap intelligence, and accountability escalation. All
-official integrations are simulated for the hackathon alpha.
+CyberSaathi is a cybercrime-first emergency navigator built for Hack4SOC 3.0.
+It helps a victim explain what happened, understand urgency, prepare the right
+complaint material, and see seeded fraud intelligence without calling any real
+government, police, bank, WhatsApp, or RTI service.
 
-## Current State
+## What It Does
 
-- Frontend: Next.js 16 App Router, TypeScript, Tailwind CSS v4, shadcn/ui
-  `radix-nova`, lucide icons.
-- Backend: FastAPI with deterministic routing, extraction, redaction,
-  recovery, similarity, cluster, document, and mock integration services.
-- Data: versioned seed fixtures, vendored local India map data, and
-  Postgres-first persistence.
-- UI: desktop app sidebar, mobile top bar + bottom nav, real India heatmap,
-  judge demo route, citizen emergency flows.
-- Team workflow: see `team/STATUS.md` and the local
-  `cybersaathi-team-workflow` skill.
-- Merge sequencing: see `team/MERGE-PLAN.md`.
+- Conversational intake for cyber-fraud and online safety cases
+- Golden Hour guidance with 1930 call prep and reference capture
+- Post-report workflows with NCRP draft, bank email, evidence timeline, and checklist
+- Seed-data scam similarity, India heatmap, public/journalist/police dashboards
+- Police admin portal with database-backed login, complaint review, notes, status updates, and export
+- Simulated integrations only, with privacy redaction for sensitive data
+
+## Tech Stack
+
+- Frontend: Next.js 16, React 19, TypeScript, Tailwind CSS v4
+- Backend: FastAPI, Pydantic, SQLAlchemy, Alembic
+- Database: PostgreSQL/PostGIS
+- Demo intelligence: deterministic rules, seeded data, mock adapters
 
 ## Run Locally
 
-```bash
-# Install Python workspace dependencies
-uv sync
-
-# API on 127.0.0.1:8000, Postgres-first runtime
-docker compose up -d postgres
-cd apps/api
-PYTHONPATH=.:../.. uv run python run_api.py
-
-# Web on 127.0.0.1:3000
-cd ../web
-npm install
-NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000 npm run build
-NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000 npm run start
-```
-
-Open <http://127.0.0.1:3000>.
-
-Use `npm run dev` only for editing. On the current Next.js 16 branch, final
-browser verification and demos should run against `npm run build` +
-`npm run start`; the dev server can produce HMR WebSocket noise and unreliable
-hydration in this local environment.
-
-## PostgreSQL Runtime
-
-Postgres is the normal local/runtime database. The API defaults to PostgreSQL;
-use `DATABASE_ENABLED=false` only for explicit in-memory fallback tests.
-
-Check whether Postgres is actually running:
-
-```bash
-pg_isready -h 127.0.0.1 -p 5432
-ss -ltnp | rg ':5432'
-docker ps
-```
-
-Start local PostGIS/Postgres:
+Start Postgres:
 
 ```bash
 docker compose up -d postgres
 ```
 
-Seed and run API:
+Run the API:
 
 ```bash
 cd apps/api
-DATABASE_URL=postgresql+asyncpg://cybersaathi:cybersaathi@127.0.0.1:5432/cybersaathi \
-PYTHONPATH=.:../.. \
-uv run python -m app.seed.seed_postgres
-
-DATABASE_URL=postgresql+asyncpg://cybersaathi:cybersaathi@127.0.0.1:5432/cybersaathi \
-PYTHONPATH=.:../.. \
-uv run python run_api.py
+PYTHONPATH=.:../../packages uv run alembic upgrade head
+PYTHONPATH=.:../../packages uv run python -m app.seed.seed_postgres
+PYTHONPATH=.:../../packages uv run python run_api.py
 ```
 
-`/healthz` must include `"database":"connected"` in normal runtime. If it does
-not, stop and fix Postgres before claiming the app is stable.
-
-## Verification
+Run the web app:
 
 ```bash
-# Backend
-cd apps/api
-PYTHONPATH=.:../.. uv run pytest
-
-# Frontend
 cd apps/web
+npm install
+NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000 npm run dev
+```
+
+Open `http://127.0.0.1:3000`.
+
+Demo police login:
+
+```text
+Officer ID: admin
+Password: admin
+```
+
+## Verify Before Deploying
+
+```bash
+cd apps/api
+PYTHONPATH=.:../../packages uv run pytest
+
+cd ../web
 npm run typecheck
 npm run lint
 npm run build
-
-# Browser / E2E
-npx tsx tests/browser-smoke.ts
-npx tsx tests/e2e-priya.ts
-npx tsx tests/e2e-fall-back.ts
-npx tsx tests/e2e-golden-hour-bilingual.ts
-npx tsx tests/e2e-refresh.ts
 ```
 
-Baseline alpha status:
+## Deployment Notes
 
-- Backend pytest: 37 tests passing.
-- Frontend build: 13 static routes on Next.js 16.
-- Browser smoke and Priya/fall-back/bilingual/refresh E2E flows passing
-  against production preview.
+Set the web app API URL:
 
-Known non-blocking warnings:
-
-- FastAPI/Starlette test client warns about `httpx` deprecation.
-- `next dev` is not the verification path for this branch; use production
-  preview for browser checks.
-
-## Repo Layout
-
-```text
-apps/api/      FastAPI backend
-apps/web/      Next.js alpha app
-packages/      Shared Python package
-seed_data/     Versioned demo fixtures
-screenshots/   Browser, flow, and design-review screenshots
-team/          Minimal team tracking
-.agents/skills/Local coding-agent skills
+```bash
+NEXT_PUBLIC_API_BASE_URL=https://your-api-host
 ```
 
-## Safety Rules
+Set a real admin JWT secret for deployed API instances:
 
-- No real calls to 1930, NCRP, banks, WhatsApp, RTI, police, or government
-  systems in the alpha.
-- Never promise fund recovery.
-- Do not store or display Aadhaar, PAN, OTPs, PINs, full card numbers,
-  passwords, or bank credentials.
-- Public, police, journalist, and dashboard surfaces must remain anonymized
-  and aggregate-only.
+```bash
+ADMIN_JWT_SECRET=change-this-to-a-long-random-secret
+```
+
+Use PostgreSQL in normal runtime. `DATABASE_ENABLED=false` is only for explicit
+in-memory fallback demos or isolated tests.
+
+## Safety
+
+- The app does not file FIRs or submit real government forms.
+- It does not call real 1930, NCRP, bank, police, WhatsApp, RTI, or journalist systems.
+- It never promises fund recovery.
+- Aadhaar, PAN, OTPs, PINs, passwords, full card numbers, and bank credentials must not be stored or shown.
+
+## Team
+
+Team AETOS
+
+Builders: Vishruth M R, Akshay Hudedmani, Nandan Kumar C.
+
+## License
+
+MIT License. See [LICENSE](LICENSE).

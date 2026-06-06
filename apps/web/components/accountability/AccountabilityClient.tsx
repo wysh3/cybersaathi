@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Accountability engine — intelligence room.
+ * Guidance — intelligence room.
  *
  * A cluster escalates when it crosses the 50-report, 30-day unresolved
  * threshold and has no FIR or resolution status. CyberSaathi then
@@ -210,21 +210,13 @@ export function AccountabilityClient() {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <PageHeader
-        eyebrow="Accountability engine"
         title="What happens to ignored complaints?"
         description="A cluster escalates when it crosses the 50-report, 30-day unresolved threshold with no FIR or resolution status. All outputs are generated from the cluster's own fields — never invented."
-        actions={
-          <StatusBadge
-            label={activeCluster?.is_accountability_alert ? "Alert active" : "Monitoring"}
-            tone={activeCluster?.is_accountability_alert ? "emergency" : "muted"}
-          />
-        }
       />
 
       {error ? (
         <Alert variant="destructive">
           <TriangleAlert aria-hidden />
-          <AlertTitle>Accountability engine</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}

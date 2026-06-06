@@ -13,7 +13,7 @@ export function ViewToggle({
   onChange: (v: View) => void;
 }) {
   return (
-    <div className="flex items-center gap-1 rounded-2xl border border-white/60 bg-white/50 p-1 shadow-glass-soft">
+    <div className="flex items-center gap-1 rounded-xl border border-white/60 bg-white/50 p-1 shadow-glass-soft">
       <button
         onClick={() => onChange("citizen")}
         className={cn(

@@ -79,7 +79,7 @@ const STEPS: ReadonlyArray<{
   {
     id: "documents",
     num: "03",
-    title: "Complaint package",
+    title: "Documents",
     blurb:
       "After the helpline reference is captured, CyberSaathi generates four editable drafts — NCRP complaint, bank dispute email, evidence timeline, and recovery checklist — using only the redacted, anonymised facts.",
     cta: { href: "/documents", label: "See the package" },
@@ -342,7 +342,7 @@ export function JudgeDemo() {
         <DemoStep
           id="documents"
           num="03"
-          title="Complaint package"
+          title="Documents"
           icon={FileText}
         >
           <p>

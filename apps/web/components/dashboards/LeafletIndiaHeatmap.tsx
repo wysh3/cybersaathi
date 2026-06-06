@@ -77,7 +77,7 @@ interface DistrictData {
 
 function MapFallback() {
   return (
-    <div className="flex h-[560px] items-center justify-center rounded-2xl bg-white/50">
+    <div className="flex h-[560px] items-center justify-center rounded-xl bg-white/50">
       <div className="flex flex-col items-center gap-3">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
         <p className="text-sm text-ink-600">Loading map...</p>
@@ -88,7 +88,7 @@ function MapFallback() {
 
 function ErrorState({ message }: { message: string }) {
   return (
-    <div className="flex h-[560px] flex-col items-center justify-center gap-2 rounded-2xl bg-white/50">
+    <div className="flex h-[560px] flex-col items-center justify-center gap-2 rounded-xl bg-white/50">
       <p className="text-sm font-medium text-emergency">Failed to load map</p>
       <p className="text-xs text-ink-500">{message}</p>
     </div>
@@ -103,7 +103,7 @@ function Legend({ maxCount }: { maxCount: number }) {
   if (maxCount === 0) return null;
   const steps = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
   return (
-    <div className="absolute right-3 top-3 z-[1000] rounded-lg bg-white/92 px-3 py-2 shadow-glass">
+    <div className="absolute right-3 top-3 z-[1000] rounded-xl bg-white/92 px-3 py-2 shadow-glass">
       <p className="text-[10px] font-semibold text-ink-700">Reports</p>
       {steps.map((t) => (
         <div key={t} className="mt-0.5 flex items-center gap-1.5">
@@ -155,7 +155,7 @@ function DistrictPanel({
   const maxDistrict = Math.max(1, ...Object.values(data.districts));
 
   return (
-    <div className="absolute bottom-4 left-4 right-4 z-[1000] max-h-[55%] overflow-y-auto rounded-2xl border border-white/70 bg-white/94 p-5 shadow-glass animate-in slide-in-from-bottom-4">
+    <div className="absolute bottom-4 left-4 right-4 z-[1000] max-h-[55%] overflow-y-auto rounded-xl border border-white/70 bg-white/94 p-5 shadow-glass animate-in slide-in-from-bottom-4">
       {/* Header */}
       <div className="mb-4 flex items-start justify-between">
         <div>
@@ -304,7 +304,7 @@ function ChoroplethMap({
   );
 
   return (
-    <div className="relative w-full overflow-hidden rounded-2xl border border-white/70 shadow-glass">
+    <div className="relative w-full overflow-hidden rounded-xl border border-white/70 shadow-glass">
       <MapContainer_
         key="india-choropleth"
         center={[22.5, 79]}
@@ -445,13 +445,10 @@ export function LeafletIndiaHeatmap() {
       setDistrictData(null);
 
       try {
-        const encoded = encodeURIComponent(stateName);
-        const data = await api.mapStateDistricts(encoded);
+        const data = await api.mapStateDistricts(stateName);
         setDistrictData(data);
-      } catch (e) {
-        setError(
-          e instanceof Error ? e.message : "Failed to load district data",
-        );
+      } catch {
+        setDistrictData(null);
       } finally {
         setDistrictLoading(false);
       }
@@ -480,7 +477,7 @@ export function LeafletIndiaHeatmap() {
       {/* District panel overlay */}
       {selectedState && (
         districtLoading ? (
-          <div className="absolute bottom-4 left-4 right-4 z-[1000] rounded-2xl border border-white/70 bg-white/94 p-6 shadow-glass animate-in">
+          <div className="absolute bottom-4 left-4 right-4 z-[1000] rounded-xl border border-white/70 bg-white/94 p-6 shadow-glass animate-in">
             <div className="flex items-center gap-3">
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
               <p className="text-sm text-ink-600">

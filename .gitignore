@@ -38,8 +38,12 @@ Thumbs.db
 .ruff_cache/
 .mypy_cache/
 
+# Generated review artifacts
+screenshots/
+apps/screenshots/
+cybersaathi_final_design_agent_pack/
+
 # Keep project artifacts intentionally committed:
 # - seed_data/
 # - apps/web/lib/maps/india-states.json
-# - screenshots/
-# - screenshots-v4/
+# - landing_page.png

@@ -1,4 +1,4 @@
-"""Accountability engine: cluster monitor and dashboard summaries."""
+"""Cluster monitor and dashboard summaries."""
 
 from __future__ import annotations
 

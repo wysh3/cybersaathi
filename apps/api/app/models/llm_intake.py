@@ -1,8 +1,7 @@
 """Pydantic models for LLM-powered conversational intake.
 
 These models define the chat conversation structure, case state snapshot,
-and LLM invocation audit trail. They mirror the conceptual records in
-LLM_INTAKE_SPEC.md §5.
+and LLM invocation audit trail for the conversational intake flow.
 """
 
 from __future__ import annotations

@@ -54,18 +54,17 @@ Also verify:
 
 ## Known Merge Risks
 
-- Screenshot churn is heavy.
-- `screenshots/v4` and `screenshots/v5` both exist.
-- `apps/web/tsconfig.json` changed `jsx` to `react-jsx`.
-- `apps/web/.next-docs` exists even though Next 16 now has
-  `node_modules/next/dist/docs`.
-- `apps/web/.agents/skills/shadcn/` duplicates the root shadcn skill.
-- `apps/web/.eslintrc.json` may be stale now that ESLint flat config is active.
-- `scripts/screenshot-v4.cjs` and `apps/web/scripts/police-drilldown-shot.cjs`
-  still point at old screenshot conventions.
+Resolved during final cleanup:
 
-Do not ignore these. Either fix them in F013 or explicitly record why they are
-safe to leave.
+- Old screenshot folders and design-pack image references were removed.
+- Duplicate `apps/web/.agents/skills/shadcn/` was removed.
+- Stale `apps/web/.eslintrc.json` was removed; flat ESLint config is active.
+- Old screenshot scripts were removed.
+
+Current deployment focus:
+
+- Verify backend tests, web typecheck/lint/build, and browser smoke before push.
+- Confirm `ADMIN_JWT_SECRET` and production API URL are set in deploy env.
 
 ## Post-Merge Branch Instructions
 

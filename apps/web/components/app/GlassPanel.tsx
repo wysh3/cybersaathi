@@ -28,7 +28,7 @@ export function GlassPanel({
         variant === "strong" && "glass-panel-strong",
         variant === "default" && "glass-panel",
         variant === "muted" && "glass-panel-muted",
-        "rounded-[26px]",
+        "rounded-xl",
         className,
       )}
     >

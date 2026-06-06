@@ -24,7 +24,6 @@ export function EmptyCaseState({
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
       <PageHeader
-        eyebrow="Complaint package"
         title="No complaint yet"
         description={
           hasExtractedFacts

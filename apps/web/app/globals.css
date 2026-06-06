@@ -157,10 +157,10 @@
   --sidebar-ring: 213 91% 43%;
 
   /* Radius scale — pack §2 (larger than default) */
-  --radius-sm: 12px;
-  --radius-md: 18px;
-  --radius-lg: 26px;
-  --radius-xl: 34px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
 
   /* Domain tokens — civic accents (calibrated against sky palette) */
   --app-saffron: 30 80% 41%;
@@ -257,7 +257,7 @@
 
   /* Serif page-title utility (pack §3) */
   .font-serif-display {
-    font-family: var(--font-newsreader), "Georgia", "Times New Roman", serif;
+    font-family: var(--font-serif);
     font-feature-settings: "ss01", "ss02";
     letter-spacing: -0.035em;
   }
@@ -265,10 +265,10 @@
   /* App atmospheric background — pack §6 AppBackground */
   .app-background {
     background:
-      linear-gradient(180deg, rgba(190, 225, 255, 0.88) 0%, rgba(244, 251, 255, 0.9) 38%, rgba(215, 237, 255, 0.86) 100%),
-      radial-gradient(ellipse 90% 48% at 18% 3%, rgba(138, 201, 255, 0.48), transparent 62%),
-      radial-gradient(ellipse 60% 42% at 88% 10%, rgba(255, 255, 255, 0.9), transparent 60%),
-      linear-gradient(180deg, #d9efff 0%, #f8fcff 46%, #dff3ff 100%);
+      linear-gradient(180deg, rgba(235, 240, 248, 0.6) 0%, rgba(248, 250, 252, 0.85) 38%, rgba(230, 236, 245, 0.5) 100%),
+      radial-gradient(ellipse 80% 45% at 20% 5%, rgba(200, 215, 235, 0.25), transparent 58%),
+      radial-gradient(ellipse 55% 40% at 85% 8%, rgba(245, 248, 252, 0.75), transparent 55%),
+      linear-gradient(180deg, #edf2f7 0%, #fafbfc 46%, #e8eef5 100%);
     background-attachment: fixed;
     min-height: 100dvh;
     position: relative;
@@ -281,22 +281,22 @@
     pointer-events: none;
     z-index: -1;
     background:
-      linear-gradient(180deg, transparent 0 22%, rgba(255, 255, 255, 0.42) 36%, rgba(148, 193, 225, 0.26) 52%, rgba(241, 250, 255, 0.68) 76%, transparent 100%),
-      radial-gradient(ellipse 58% 22% at 20% 47%, rgba(87, 127, 156, 0.16), transparent 67%),
-      radial-gradient(ellipse 60% 24% at 78% 45%, rgba(74, 117, 148, 0.12), transparent 68%);
-    filter: blur(0.2px);
+      linear-gradient(180deg, transparent 0 18%, rgba(242, 246, 252, 0.5) 32%, rgba(195, 212, 232, 0.15) 50%, rgba(236, 242, 250, 0.5) 72%, transparent 100%),
+      radial-gradient(ellipse 55% 20% at 22% 45%, rgba(175, 195, 220, 0.1), transparent 65%),
+      radial-gradient(ellipse 58% 22% at 78% 44%, rgba(165, 185, 212, 0.08), transparent 66%);
+    filter: blur(0.3px);
   }
 
   .app-background::after {
     content: "";
     position: fixed;
     inset: auto 0 0;
-    height: 42vh;
+    height: 38vh;
     pointer-events: none;
     z-index: -1;
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.58)),
-      repeating-linear-gradient(180deg, rgba(31, 126, 234, 0.05) 0 1px, transparent 1px 18px);
+      linear-gradient(180deg, rgba(242, 246, 252, 0.06), rgba(242, 246, 252, 0.5)),
+      repeating-linear-gradient(180deg, rgba(175, 195, 220, 0.06) 0 1px, transparent 1px 18px);
     mask-image: linear-gradient(to bottom, transparent, black 28%, black);
   }
 

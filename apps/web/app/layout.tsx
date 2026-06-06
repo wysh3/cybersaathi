@@ -22,7 +22,6 @@ const plexMono = IBM_Plex_Mono({
 
 const newsreader = Newsreader({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
   style: ["normal", "italic"],
   display: "swap",
   variable: "--font-newsreader",
@@ -53,7 +52,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#075fd1",
+  themeColor: "#0a6bdb",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

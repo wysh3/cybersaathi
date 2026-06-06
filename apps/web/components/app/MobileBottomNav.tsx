@@ -45,7 +45,7 @@ const TABS = [
     href: "/dashboard",
     label: "Dashboard",
     icon: BarChart3,
-    match: (p: string) => p.startsWith("/dashboard"),
+    match: (p: string) => p === "/dashboard" || p.startsWith("/dashboard/"),
   },
 ] as const;
 

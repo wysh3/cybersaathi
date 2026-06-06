@@ -9,10 +9,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 import { Bell, Menu, Phone, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Logo } from "@/components/ui/Logo";
 import { StatusBadge } from "@/components/app/StatusBadge";
 import { cn } from "@/lib/utils";
 import { useWorkflowStore } from "@/lib/workflow-store";
@@ -49,7 +49,13 @@ export function MobileTopBar() {
         className="flex items-center gap-2"
         aria-label="CyberSaathi home"
       >
-        <Logo className="size-7" />
+        <Image
+          src="/logo.png"
+          alt="CyberSaathi"
+          width={36}
+          height={36}
+          className="shrink-0"
+        />
         <span className="font-serif-display text-sm font-semibold tracking-tight text-ink-900">
           {title}
         </span>

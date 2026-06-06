@@ -120,7 +120,7 @@ export function CitizenDashboard() {
       {/*  1. You're Not Alone Widget                                   */}
       {/* ============================================================ */}
       {topMatch && topMatch.match_count > 0 && (
-        <div className="rounded-2xl border border-teal-200/60 bg-gradient-to-br from-teal-50/80 to-emerald-50/50 p-5 shadow-sm">
+        <div className="rounded-xl border border-teal-200/60 bg-gradient-to-br from-teal-50/80 to-emerald-50/50 p-5 shadow-sm">
           <div className="flex items-start gap-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-teal-700">
               <Users className="size-5" />
@@ -152,7 +152,7 @@ export function CitizenDashboard() {
       {/* ============================================================ */}
       {/*  2. Estimated Resolution Time                                 */}
       {/* ============================================================ */}
-      <div className="rounded-2xl border border-teal-200/60 bg-white p-5 shadow-sm">
+      <div className="rounded-xl border border-teal-200/60 bg-white p-5 shadow-sm">
         <div className="flex items-start gap-3">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-teal-700">
             <Clock className="size-5" />
@@ -175,7 +175,7 @@ export function CitizenDashboard() {
       {/* ============================================================ */}
       {/*  3. Protect Someone Else — Quick Share                        */}
       {/* ============================================================ */}
-      <div className="rounded-2xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50/80 to-blue-50/50 p-5 shadow-sm">
+      <div className="rounded-xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50/80 to-blue-50/50 p-5 shadow-sm">
         <div className="flex items-start gap-3">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
             <Send className="size-5" />
@@ -208,7 +208,7 @@ export function CitizenDashboard() {
       {/* ============================================================ */}
       {/*  4. Scam Alert Feed                                           */}
       {/* ============================================================ */}
-      <div className="rounded-2xl border border-slate-200/60 bg-white/70 p-5">
+      <div className="rounded-xl border border-slate-200/60 bg-white/70 p-5">
         <div className="mb-3 flex items-center gap-2">
           <AlertTriangle className="size-4 text-amber-500" />
           <p className="text-sm font-semibold text-slate-800">

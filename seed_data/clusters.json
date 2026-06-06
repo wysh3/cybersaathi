@@ -155,7 +155,7 @@
     ],
     "first_report_at": "2026-04-26T03:00:00Z",
     "latest_report_at": "2026-06-02T00:00:00Z",
-    "total_amount": 42382.59999999999,
+    "total_amount": 42382.6,
     "report_count": 8,
     "trigger_reason": null
   }

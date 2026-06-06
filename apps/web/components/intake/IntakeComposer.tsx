@@ -326,12 +326,6 @@ export function IntakeComposer() {
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-7">
       <div className="grid items-end gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
         <PageHeader
-          eyebrow={
-            <span className="inline-flex items-center gap-1.5">
-              <Sparkles className="size-3" aria-hidden />
-              Emergency intake
-            </span>
-          }
           title="What happened?"
           description="Describe the incident in your own words. Our AI will guide you to the right steps."
         />
@@ -345,7 +339,7 @@ export function IntakeComposer() {
         )}
       >
         <div className="flex min-w-0 flex-col gap-5">
-          <GlassPanel variant="strong" className="overflow-hidden rounded-[32px] p-5 sm:p-8">
+          <GlassPanel variant="strong" className="overflow-hidden rounded-xl p-5 sm:p-8">
             <form className="flex flex-col gap-7" onSubmit={handleSubmit} noValidate>
               <div className="relative flex flex-col">
                 <Textarea
@@ -355,7 +349,7 @@ export function IntakeComposer() {
                   placeholder="Type or speak to describe the incident..."
                   value={description}
                   onChange={(event) => setDescription(event.target.value)}
-                  className="min-h-[220px] resize-none rounded-[28px] border-white/70 bg-white/58 px-6 py-6 pb-20 text-base leading-relaxed text-ink-900 shadow-glass-soft placeholder:text-ink-500/80 focus-visible:ring-sky-400/60 md:text-base"
+                  className="min-h-[220px] resize-none rounded-xl border-white/70 bg-white/58 px-6 py-6 pb-20 text-base leading-relaxed text-ink-900 shadow-glass-soft placeholder:text-ink-500/80 focus-visible:ring-sky-400/60 md:text-base"
                   data-testid="intake-description"
                 />
                 <div className="pointer-events-none absolute inset-x-6 bottom-5 flex items-center justify-between gap-4">
@@ -398,7 +392,7 @@ export function IntakeComposer() {
                         onClick={() => setActiveMethod(method.id)}
                         aria-pressed={active}
                         className={cn(
-                          "group flex min-h-[118px] items-start gap-4 rounded-[20px] border bg-white/58 p-5 text-left shadow-glass-soft transition-colors",
+                          "group flex min-h-[118px] items-start gap-4 rounded-xl border bg-white/58 p-5 text-left shadow-glass-soft transition-colors",
                           active
                             ? "border-sky-300/80 bg-white/82 ring-2 ring-sky-300/50"
                             : "border-white/70 hover:border-sky-300/70 hover:bg-white/80",
@@ -407,7 +401,7 @@ export function IntakeComposer() {
                       >
                         <span
                           className={cn(
-                            "inline-flex size-11 shrink-0 items-center justify-center rounded-2xl",
+                            "inline-flex size-11 shrink-0 items-center justify-center rounded-xl",
                             active
                               ? "bg-sky-600 text-white"
                               : "bg-sky-100/80 text-sky-700",
@@ -429,7 +423,7 @@ export function IntakeComposer() {
                 </div>
 
                 {activeMethod === "sms" ? (
-                  <div className="flex flex-col gap-2 rounded-2xl border border-sky-100 bg-white/70 p-4">
+                  <div className="flex flex-col gap-2 rounded-xl border border-sky-100 bg-white/70 p-4">
                     <div className="flex items-center justify-between gap-2">
                       <label
                         htmlFor="evidence-sms"
@@ -464,7 +458,7 @@ export function IntakeComposer() {
                 ) : null}
 
                 {activeMethod === "screenshot" ? (
-                  <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-sky-200 bg-white/60 px-4 py-6 text-center">
+                  <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-sky-200 bg-white/60 px-4 py-6 text-center">
                     <ImageIcon
                       className="size-6 text-sky-600"
                       aria-hidden
@@ -491,7 +485,7 @@ export function IntakeComposer() {
                 ) : null}
 
                 {activeMethod === "voice" ? (
-                  <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-sky-200 bg-white/60 px-4 py-6 text-center">
+                  <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-sky-200 bg-white/60 px-4 py-6 text-center">
                     <Mic
                       className={cn(
                         "size-6",
@@ -577,7 +571,7 @@ export function IntakeComposer() {
                       data-testid="scenario-priya"
                       data-scenario-id={primaryScenario.id}
                       onClick={() => applyScenario(primaryScenario)}
-                      className="inline-flex h-14 shrink-0 items-center gap-3 rounded-[18px] border border-white/75 bg-white/65 px-6 text-sm font-semibold text-ink-800 shadow-glass-soft transition-colors hover:bg-white"
+                      className="inline-flex h-14 shrink-0 items-center gap-3 rounded-[10px] border border-white/75 bg-white/65 px-6 text-sm font-semibold text-ink-800 shadow-glass-soft transition-colors hover:bg-white"
                     >
                       <Receipt className="size-4 text-sky-700" aria-hidden />
                       UPI / Payment Fraud
@@ -590,7 +584,7 @@ export function IntakeComposer() {
                       data-testid={`scenario-${scenario.id}`}
                       data-scenario-id={scenario.id}
                       onClick={() => applyScenario(scenario)}
-                      className="inline-flex h-14 shrink-0 items-center gap-3 rounded-[18px] border border-white/75 bg-white/56 px-6 text-sm font-semibold text-ink-800 shadow-glass-soft transition-colors hover:bg-white"
+                      className="inline-flex h-14 shrink-0 items-center gap-3 rounded-[10px] border border-white/75 bg-white/56 px-6 text-sm font-semibold text-ink-800 shadow-glass-soft transition-colors hover:bg-white"
                     >
                       <WandSparkles className="size-4 text-sky-700" aria-hidden />
                       {scenario.label.replace("Sextortion + UPI demand", "Social Media Harassment").replace("Account hack, money unclear", "Account Hacked")}
@@ -605,7 +599,7 @@ export function IntakeComposer() {
                   size="lg"
                   disabled={submitting || !description.trim()}
                   aria-label="Route to the right flow"
-                  className="h-16 w-full rounded-[20px] bg-sky-600 text-lg font-semibold shadow-glass-strong hover:bg-sky-700"
+                  className="h-16 w-full rounded-xl bg-sky-600 text-lg font-semibold shadow-glass-strong hover:bg-sky-700"
                   data-testid="route-button"
                 >
                   {submitting ? (
@@ -651,7 +645,7 @@ export function IntakeComposer() {
                 <li key={h.number}>
                   <a
                     href={`tel:${h.number}`}
-                    className="flex h-full flex-col gap-0.5 rounded-2xl border border-sky-100 bg-white/80 p-2.5 transition-colors hover:border-sky-300 hover:bg-sky-50"
+                    className="flex h-full flex-col gap-0.5 rounded-xl border border-sky-100 bg-white/80 p-2.5 transition-colors hover:border-sky-300 hover:bg-sky-50"
                   >
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-sky-700">
                       {h.label}

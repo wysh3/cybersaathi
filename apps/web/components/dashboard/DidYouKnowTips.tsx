@@ -165,7 +165,7 @@ export function DidYouKnowTips({ fraudType }: { fraudType?: string | null }) {
   const tip = tips[current];
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-teal-50 via-sky-50 to-teal-50/60 p-5 shadow-sm">
+    <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-teal-50 via-sky-50 to-teal-50/60 p-5 shadow-sm">
       {/* Desktop arrow buttons — visible on hover */}
       <button
         onClick={onPrev}
@@ -213,7 +213,7 @@ export function DidYouKnowTips({ fraudType }: { fraudType?: string | null }) {
 
       {/* Fade overlay during transition */}
       {fading && (
-        <div className="pointer-events-none absolute inset-0 rounded-2xl bg-white/40" />
+        <div className="pointer-events-none absolute inset-0 rounded-xl bg-white/40" />
       )}
     </div>
   );

@@ -51,9 +51,8 @@ Vishruth should use `team/MERGE-PLAN.md` for branch sequencing and merge decisio
 
 ## Current Product Direction
 
-CyberSaathi is now being built as a serious competition-grade web app, not a
-thin demo. The next design milestone is a full product-shell redesign inspired
-by `cybersaathi_final_design_agent_pack/`:
+CyberSaathi is now a competition-grade web app, not a thin demo. The current
+design direction is the shipped product shell and `landing_page.png`:
 
 - soft off-white app canvas
 - premium but restrained public-service visual language
@@ -64,9 +63,8 @@ by `cybersaathi_final_design_agent_pack/`:
 - fewer dense panels per viewport
 - richer spacing, shadows, icons, status chips, and document surfaces
 
-Use the reference for composition, spacing, polish, mobile shell, and calm
-government-service tone. Do not copy its fake text, generic service categories,
-or marketing-first premise. CyberSaathi remains emergency-intake-first.
+Keep the composition, spacing, polish, mobile shell, and calm
+government-service tone. CyberSaathi remains emergency-intake-first.
 
 Known design gaps after F005 review:
 
@@ -1274,11 +1272,9 @@ When building from this file:
   without explicit instruction.
 - When in doubt, choose the path that helps a panicking victim complete the
   next official action fastest.
-- The visual design pack at
-  `cybersaathi_final_design_agent_pack/CYBERSAATHI_AI_AGENT_DESIGN_HANDOFF.md`
-  is **inspiration only**. It provides composition, spacing, polish, and
-  mobile shell direction. Do not copy fake text, fake service categories,
-  or its marketing-first premise. AGENTS.md product rules always win.
+- The old visual design pack has been removed from the deployable repo.
+  Use the shipped app, `landing_page.png`, and AGENTS.md product rules as the
+  source of truth for final polish.
 - For any Next.js App Router work, read the version-matched installed
   Next.js docs before editing. If `node_modules/next/dist/docs/` is
   missing, run `npx @next/codemod@latest agents-md` once to generate

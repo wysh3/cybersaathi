@@ -160,5 +160,5 @@ export const JOURNEY_STEPS = [
   { id: "review", label: "Review", description: "Confirm facts" },
   { id: "act", label: "Act", description: "Call 1930 / next action" },
   { id: "recovery", label: "Recovery", description: "Outlook" },
-  { id: "documents", label: "Documents", description: "Complaint package" },
+  { id: "documents", label: "Documents" },
 ] as const;

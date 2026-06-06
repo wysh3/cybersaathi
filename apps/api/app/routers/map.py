@@ -48,7 +48,15 @@ def map_state_districts(state_name: str) -> dict:
         fraud_types[category] = fraud_types.get(category, 0) + 1
         total_amount += c.amount or 0
     if not found:
-        raise HTTPException(status_code=404, detail=f"State '{state_name}' not found")
+        # State exists in seed data but has no complaints — return empty
+        return {
+            "state": state_name,
+            "districts": {},
+            "fraud_types": {},
+            "total_complaints": 0,
+            "total_amount": 0,
+            "district_count": 0,
+        }
     return {
         "state": state_name,
         "districts": dict(

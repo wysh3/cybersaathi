@@ -21,7 +21,6 @@ export function DocumentHeader({
 }) {
   return (
     <PageHeader
-      eyebrow="Complaint package"
       title="Case file"
       description="Editable drafts generated from your description. Submit through official channels — CyberSaathi never files on your behalf."
       actions={
