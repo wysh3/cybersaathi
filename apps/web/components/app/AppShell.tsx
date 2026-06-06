@@ -1,16 +1,30 @@
 "use client";
 
-import { Phone } from "lucide-react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Phone, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { AppBackground } from "@/components/app/AppBackground";
 import { DesktopSidebar } from "@/components/app/DesktopSidebar";
 import { MobileBottomNav } from "@/components/app/MobileBottomNav";
 import { MobileTopBar } from "@/components/app/MobileTopBar";
+import { AdminLoginModal } from "@/components/admin/AdminLoginModal";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const [adminModalOpen, setAdminModalOpen] = useState(false);
+
   return (
     <>
+      <AdminLoginModal
+        open={adminModalOpen}
+        onClose={() => setAdminModalOpen(false)}
+        onLoginSuccess={() => {
+          setAdminModalOpen(false);
+          router.push("/admin/dashboard");
+        }}
+      />
       <AppBackground />
       <MobileTopBar />
       <div className="mx-auto min-h-screen w-full max-w-[1680px] px-0 py-0 md:px-8 md:py-8 xl:px-12">
@@ -19,7 +33,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           className="mx-auto min-h-screen w-full overflow-hidden bg-sky-50/70 shadow-glass backdrop-blur-2xl md:min-h-[calc(100vh-4rem)] md:rounded-[34px] md:border md:border-white/70 md:bg-white/38"
         >
           <div className="grid min-h-screen md:min-h-[calc(100vh-4rem)] md:grid-cols-[260px_minmax(0,1fr)]">
-            <DesktopSidebar />
+            <DesktopSidebar onAdminClick={() => setAdminModalOpen(true)} />
             <section className="flex min-w-0 flex-col">
               <header
                 data-app-chrome="true"
@@ -27,6 +41,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               >
                 <div className="flex-1" />
                 <div className="flex items-center gap-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAdminModalOpen(true)}
+                    className="h-10 rounded-full border-white/50 bg-white/40 px-4 font-medium text-ink-700 hover:bg-white/70"
+                    title="Authority Access"
+                  >
+                    <ShieldCheck className="size-4" />
+                    <span className="ml-1.5 hidden lg:inline">Admin</span>
+                  </Button>
                   <Button
                     asChild
                     variant="destructive"
@@ -51,7 +75,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </div>
-      <MobileBottomNav />
+      <MobileBottomNav onAdminClick={() => setAdminModalOpen(true)} />
     </>
   );
 }

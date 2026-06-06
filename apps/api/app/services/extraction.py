@@ -19,7 +19,11 @@ from app.services.redaction import redact_text
 
 _UPI_RE = re.compile(r"\b([a-zA-Z0-9._-]{2,}@(?:upi|ybl|okhdfcbank|oksbi|axl|ibl|fbl|airtel|apl))\b", re.IGNORECASE)
 _PHONE_RE = re.compile(r"(?:\+?91[\s-]?)?([6-9]\d{9})\b")
-_UTR_RE = re.compile(r"\b(?:utr|txn(?:id|ref)?|reference(?:\s*no)?|tx)[\w\s:#=-]{0,30}[\n\r]\s*([0-9]{8,18})\b", re.IGNORECASE)
+_UTR_RE = re.compile(
+    r"\b(?:utr|txn(?:\s*(?:id|ref))?|reference(?:\s*(?:no|number))?|tx)\b"
+    r"[^0-9\n\r]{0,30}[\n\r]?\s*([0-9]{8,18})\b",
+    re.IGNORECASE,
+)
 _AMOUNT_RE = re.compile(r"(?:rs\.?|inr|₹)\s*([0-9][0-9,]*\.?[0-9]*)", re.IGNORECASE)
 _BANK_HINTS = {
     "sbi": "State Bank of India",

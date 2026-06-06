@@ -26,6 +26,7 @@ from app.routers import (
     map_router,
     similarity_router,
     post_report_router,
+    admin_router,
 )
 from app.seed import write_seed_files
 
@@ -64,12 +65,21 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=False,
+        allow_origins=[
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:3001",
+            "http://127.0.0.1:3001",
+        ],
+        allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    write_seed_files(DEFAULT_SEED_DIR)
+    try:
+        write_seed_files(DEFAULT_SEED_DIR)
+    except OSError:
+        # File may be locked by another process; seed data is already on disk
+        pass
     app.include_router(intake_router)
     app.include_router(intake_chat_router)
     app.include_router(evidence_router)
@@ -81,6 +91,7 @@ def create_app() -> FastAPI:
     app.include_router(integrations_router)
     app.include_router(map_router)
     app.include_router(post_report_router)
+    app.include_router(admin_router)
 
     @app.get("/healthz", tags=["meta"])
     async def healthz() -> dict[str, str]:

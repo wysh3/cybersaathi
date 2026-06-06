@@ -15,8 +15,8 @@ from typing import Iterable
 # UTR / transaction reference numbers — these are NOT account numbers and
 # must be preserved. Matched BEFORE the account_long pattern.
 _UTR_PRESERVE_RE = re.compile(
-    r"(?i)\b(utr|txn\s*(?:id|ref)?|reference\s*(?:no|number)?|tx)"
-    r"[\w\s:#=-]{0,30}[\n\r]\s*(\d{8,18})\b"
+    r"(?i)\b(utr|txn(?:\s*(?:id|ref))?|reference(?:\s*(?:no|number))?|tx)\b"
+    r"[^0-9\n\r]{0,30}[\n\r]?\s*(\d{8,18})\b"
 )
 _UTR_PLACEHOLDER = "__UTR_PRESERVED_{num}__"
 

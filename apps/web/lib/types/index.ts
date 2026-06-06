@@ -475,3 +475,90 @@ export interface IntakeConversationRead {
   created_at: string;
   updated_at: string;
 }
+
+// ---------------------------------------------------------------------------
+// Admin Portal types (police-dashboard)
+// ---------------------------------------------------------------------------
+
+export interface AdminLoginRequest {
+  officer_id: string;
+  password: string;
+}
+
+export interface AdminLoginResponse {
+  success: boolean;
+  officer_id: string;
+  name: string;
+  role: string;
+  message: string;
+}
+
+export interface AdminUser {
+  officer_id: string;
+  name: string;
+  role: "super_admin" | "field_officer";
+}
+
+export interface AdminStats {
+  total_complaints: number;
+  pending_unresolved: number;
+  resolved_this_week: number;
+  golden_hour_cases: number;
+}
+
+export interface AdminComplaintListItem {
+  id: string;
+  victim_name: string;
+  contact: string;
+  fraud_type: string;
+  amount_lost: number;
+  urgency: string;
+  filed_at: string;
+  status: string;
+  pipeline: string;
+  has_cluster: boolean;
+}
+
+export interface AdminComplaintsPage {
+  complaints: AdminComplaintListItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface AdminNoteItem {
+  id: string;
+  officer_id: string;
+  officer_name: string;
+  note: string;
+  timestamp: string;
+}
+
+export interface AdminComplaintDetail {
+  id: string;
+  victim_name: string;
+  contact: string;
+  fraud_type: string;
+  platform_used: string;
+  transaction_id: string;
+  upi_id: string;
+  amount: number;
+  description: string;
+  severity: string;
+  urgency_score: number;
+  pipeline: string;
+  status: string;
+  filed_at: string;
+  incident_at: string;
+  state: string;
+  district: string;
+  evidence_items: { id: string; kind: string; redacted_text: string; extracted_fields: Record<string, string>; created_at: string | null }[];
+  cluster_id: string | null;
+  cluster_report_count: number | null;
+  notes: AdminNoteItem[];
+  is_resolved: boolean;
+  has_fir: boolean;
+}
+
+export type ComplaintStatus = "pending" | "under_review" | "escalated" | "resolved" | "rejected";

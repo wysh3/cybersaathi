@@ -1,6 +1,6 @@
 # CyberSaathi Team Status
 
-Last Updated: 2026-06-06 02:55 IST
+Last Updated: 2026-06-06 07:46 IST
 Main Branch Health: Green
 Current Stable Demo: Yes
 
@@ -10,13 +10,24 @@ Current Stable Demo: Yes
 |---|---|---|---|
 | Nandan | none | Heatmap, journalist, citizen awareness | Done |
 | Akshay | none | Post-Report Response Workflows | Done |
-| Vishruth | none | F015 LLM Intake | Done |
+| Vishruth | none | Police Admin Portal | Done |
 
 ## Active Features
 
 | ID | Owner | Status | Branch |
 |---|---|---|---|
 | AWARENESS | Nandan | Done | feat/nandan/heatmap-journalist-citizen-awareness |
+| POLICE | Vishruth | Done | police-dashboard |
+
+### Police Admin Portal
+Status: Done
+Owner: Vishruth
+Branch: police-dashboard
+Merged Into: main
+Blocked By: none
+Goal: Add police authority dashboard with database-backed admin authentication, complaint management, status updates, notes, and exports.
+Notes:
+- 2026-06-06 07:46 IST: Merged into main locally after backend tests, web typecheck/lint/build, Postgres migration/seed verification, targeted admin API smoke, and browser smoke passed.
 
 ### F015 LLM Intake Conversational Case Builder
 Status: Done

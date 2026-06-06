@@ -24,7 +24,7 @@ const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: BarChart3, match: (p: string) => p.startsWith("/dashboard") },
 ] as const;
 
-export function DesktopSidebar() {
+export function DesktopSidebar({ onAdminClick }: { onAdminClick?: () => void }) {
   const pathname = usePathname() ?? "/";
 
   return (

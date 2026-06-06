@@ -49,9 +49,18 @@ import type {
   StartSessionResponse,
   StateDistrictResponse,
   UiAction,
+  AdminLoginRequest,
+  AdminLoginResponse,
+  AdminUser,
+  AdminStats,
+  AdminComplaintListItem,
+  AdminComplaintsPage,
+  AdminComplaintDetail,
+  AdminNoteItem,
+  ComplaintStatus,
 } from "@/lib/types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
 class ApiError extends Error {
   status: number;
@@ -66,6 +75,7 @@ class ApiError extends Error {
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(init.headers || {}),
@@ -280,6 +290,70 @@ export const api = {
     request<IntakeConversationRead>(
       `/intake/chat/${encodeURIComponent(conversationId)}`,
     ),
+
+  // ---- Admin Portal (police-dashboard) ----
+  adminLogin: (body: AdminLoginRequest) =>
+    request<AdminLoginResponse>(`/admin/auth/login`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  adminLogout: () =>
+    request<{ success: boolean; message: string }>(`/admin/auth/logout`, {
+      method: "POST",
+    }),
+  adminMe: () => request<AdminUser>(`/admin/auth/me`),
+  adminStats: () => request<AdminStats>(`/admin/stats`),
+  adminComplaints: (params: {
+    page?: number;
+    page_size?: number;
+    search?: string;
+    status?: string;
+    fraud_type?: string;
+    urgency?: string;
+    date_from?: string;
+    date_to?: string;
+    sort_by?: string;
+    sort_dir?: string;
+  } = {}) => {
+    const qs = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== "") qs.set(k, String(v));
+    });
+    const tail = qs.toString();
+    return request<AdminComplaintsPage>(`/admin/complaints${tail ? `?${tail}` : ""}`);
+  },
+  adminComplaintDetail: (id: string) =>
+    request<AdminComplaintDetail>(`/admin/complaints/${encodeURIComponent(id)}`),
+  adminUpdateStatus: (complaintId: string, status: ComplaintStatus, note?: string) =>
+    request<{ success: boolean; complaint_id: string; old_status: string; new_status: string }>(
+      `/admin/complaints/${encodeURIComponent(complaintId)}/status`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ status, note: note ?? null }),
+      },
+    ),
+  adminAddNote: (complaintId: string, note: string) =>
+    request<{ success: boolean; note: AdminNoteItem }>(
+      `/admin/complaints/${encodeURIComponent(complaintId)}/notes`,
+      {
+        method: "POST",
+        body: JSON.stringify({ note }),
+      },
+    ),
+  adminExportCsv: (params: {
+    search?: string;
+    status?: string;
+    fraud_type?: string;
+    date_from?: string;
+    date_to?: string;
+  } = {}) => {
+    const qs = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v) qs.set(k, v);
+    });
+    const tail = qs.toString();
+    window.open(`${API_BASE}/admin/export${tail ? `?${tail}` : ""}`, "_blank");
+  },
 };
 
 export { ApiError };
@@ -327,4 +401,14 @@ export type {
   MessageRole,
   NextAction,
   UiAction,
+  // Admin Portal
+  AdminLoginRequest,
+  AdminLoginResponse,
+  AdminUser,
+  AdminStats,
+  AdminComplaintListItem,
+  AdminComplaintsPage,
+  AdminComplaintDetail,
+  AdminNoteItem,
+  ComplaintStatus,
 };

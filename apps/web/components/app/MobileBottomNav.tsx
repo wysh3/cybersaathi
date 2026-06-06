@@ -14,6 +14,7 @@ import {
   Files,
   LayoutDashboard,
   ShieldCheck,
+  Shield,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -48,7 +49,7 @@ const TABS = [
   },
 ] as const;
 
-export function MobileBottomNav() {
+export function MobileBottomNav({ onAdminClick }: { onAdminClick?: () => void }) {
   const pathname = usePathname() ?? "/";
   return (
     <nav

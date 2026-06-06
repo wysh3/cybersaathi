@@ -24,8 +24,8 @@ from app.models.db import Base
 
 # Default: local Postgres. Override with env var.
 # Format: postgresql+asyncpg://user:pass@host:port/dbname
-DEFAULT_DATABASE_URL = "postgresql+asyncpg://cybersaathi:cybersaathi@127.0.0.1:5432/cybersaathi"
-DEFAULT_SYNC_DATABASE_URL = "postgresql+psycopg://cybersaathi:cybersaathi@127.0.0.1:5432/cybersaathi"
+DEFAULT_DATABASE_URL = "postgresql+asyncpg://cybersaathi:cybersaathi@localhost:5432/cybersaathi"
+DEFAULT_SYNC_DATABASE_URL = "postgresql+psycopg://cybersaathi:cybersaathi@localhost:5432/cybersaathi"
 
 
 def _db_url() -> str:
