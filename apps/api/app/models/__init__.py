@@ -375,6 +375,108 @@ class UpdatePostReportStepsRequest(BaseModel):
     notes: Optional[str] = None
 
 
+# ---------------------------------------------------------------------------
+# Admin Portal Pydantic models (police-dashboard)
+# ---------------------------------------------------------------------------
+
+
+class AdminLoginRequest(BaseModel):
+    officer_id: str
+    password: str
+
+
+class AdminLoginResponse(BaseModel):
+    success: bool
+    officer_id: str
+    name: str
+    role: str
+    message: str
+
+
+class AdminComplaintListItem(BaseModel):
+    id: str
+    victim_name: str = "(anonymous)"
+    contact: str = "(anonymous)"
+    fraud_type: str
+    amount_lost: float
+    urgency: str
+    filed_at: datetime
+    status: str
+    pipeline: str
+    has_cluster: bool = False
+
+
+class AdminComplaintDetail(BaseModel):
+    id: str
+    victim_name: str = "(anonymous)"
+    contact: str = "(anonymous)"
+    fraud_type: str
+    platform_used: str = ""
+    transaction_id: str = ""
+    upi_id: str = ""
+    amount: float
+    description: str
+    severity: str
+    urgency_score: int
+    pipeline: str
+    status: str
+    filed_at: datetime
+    incident_at: datetime
+    state: str
+    district: str
+    evidence_items: list[dict] = Field(default_factory=list)
+    cluster_id: Optional[str] = None
+    cluster_report_count: Optional[int] = None
+    notes: list["AdminNoteItem"] = Field(default_factory=list)
+    is_resolved: bool = False
+    has_fir: bool = False
+
+
+class AdminNoteItem(BaseModel):
+    id: str
+    officer_id: str
+    officer_name: str
+    note: str
+    timestamp: datetime
+
+
+class AdminNoteRequest(BaseModel):
+    note: str
+
+
+class AdminStatusUpdateRequest(BaseModel):
+    status: Literal["pending", "under_review", "escalated", "resolved", "rejected"]
+    note: Optional[str] = None
+
+
+class AdminStatsResponse(BaseModel):
+    total_complaints: int
+    pending_unresolved: int
+    resolved_this_week: int
+    golden_hour_cases: int
+
+
+class AdminComplaintsPage(BaseModel):
+    complaints: list[AdminComplaintListItem]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+
+class AdminAuditLogEntry(BaseModel):
+    id: str
+    complaint_id: Optional[str]
+    officer_id: str
+    officer_name: str
+    action: str
+    old_status: Optional[str] = None
+    new_status: Optional[str] = None
+    note: Optional[str] = None
+    timestamp: datetime
+
+
 # Pydantic v2 forward ref resolution
 SimilarityResult.model_rebuild()
+AdminComplaintDetail.model_rebuild()
 

@@ -411,6 +411,50 @@ class LlmInvocationORM(Base):
     )
 
 
+# ---------------------------------------------------------------------------
+# Admin Portal tables (police-dashboard)
+# ---------------------------------------------------------------------------
+
+
+class AdminUserORM(Base):
+    __tablename__ = "admin_users"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    officer_id: Mapped[str] = mapped_column(String(32), unique=True, nullable=False, index=True)
+    password_hash: Mapped[str] = mapped_column(String(256), nullable=False)
+    role: Mapped[str] = mapped_column(
+        SQLEnum("super_admin", "field_officer", name="admin_role_enum"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        Index("ix_admin_users_officer_id", "officer_id", unique=True),
+    )
+
+
+class AdminAuditLogORM(Base):
+    __tablename__ = "admin_audit_logs"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    complaint_id: Mapped[str | None] = mapped_column(
+        String(32), ForeignKey("complaints.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    officer_id: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    action: Mapped[str] = mapped_column(String(64), nullable=False)
+    old_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    new_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    officer_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+
+    __table_args__ = (
+        Index("ix_admin_audit_complaint_ts", "complaint_id", "timestamp"),
+        Index("ix_admin_audit_officer_ts", "officer_id", "timestamp"),
+    )
+
+
 # Export all models for Alembic autogenerate
 __all__ = [
     "Base",
@@ -427,4 +471,6 @@ __all__ = [
     "IntakeConversationORM",
     "IntakeMessageORM",
     "LlmInvocationORM",
+    "AdminUserORM",
+    "AdminAuditLogORM",
 ]
